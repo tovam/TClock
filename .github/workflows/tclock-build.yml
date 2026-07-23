@@ -21,6 +21,24 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Verify version advanced
+        shell: bash
+        run: |
+          current_code="$(sed -n 's/^VERSION_CODE=//p' gradle.properties)"
+          previous_code="$(git show HEAD^:gradle.properties | sed -n 's/^VERSION_CODE=//p')"
+          current_name="$(sed -n 's/^VERSION_NAME=//p' gradle.properties)"
+          previous_name="$(git show HEAD^:gradle.properties | sed -n 's/^VERSION_NAME=//p')"
+
+          test -n "$current_code"
+          test -n "$previous_code"
+          test "$current_code" -gt "$previous_code"
+          test -n "$current_name"
+          test -n "$previous_name"
+          test "$current_name" != "$previous_name"
+          test "$(printf '%s\n%s\n' "$previous_name" "$current_name" | sort -V | tail -n 1)" = "$current_name"
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -60,11 +78,7 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.TCLOCK_KEY_PASSWORD }}
           SIGNING_STORE_FILE: ${{ runner.temp }}/tclock-signing.p12
           SIGNING_STORE_PASSWORD: ${{ secrets.TCLOCK_STORE_PASSWORD }}
-        run: |
-          ./gradlew assembleFossRelease \
-            -PVERSION_CODE=${{ github.run_number }} \
-            -PVERSION_NAME=1.0.${{ github.run_number }} \
-            --no-daemon
+        run: ./gradlew assembleFossRelease --no-daemon
 
       - name: Prepare public APK
         run: |

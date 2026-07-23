@@ -43,7 +43,7 @@ class TimerService : Service() {
         startForeground(
             TIMER_RUNNING_NOTIFICATION_ID,
             notification(
-                title = getString(R.string.app_name),
+                title = getString(R.string.versioned_app_name),
                 contentText = getString(R.string.timers_notification_msg),
                 firstRunningTimerId = INVALID_TIMER_ID
             )

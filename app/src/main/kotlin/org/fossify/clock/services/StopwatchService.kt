@@ -33,7 +33,7 @@ class StopwatchService : Service() {
         super.onCreate()
         bus.register(this)
         notificationBuilder = getServiceNotificationBuilder(
-            getString(R.string.app_name),
+            getString(R.string.versioned_app_name),
             getString(R.string.stopwatch)
         )
     }

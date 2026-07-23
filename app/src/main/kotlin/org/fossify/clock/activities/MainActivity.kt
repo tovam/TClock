@@ -428,7 +428,7 @@ class MainActivity : SimpleActivity() {
         }
 
         startAboutActivity(
-            appNameId = R.string.app_name,
+            appNameId = R.string.versioned_app_name,
             licenseMask = licenses,
             versionName = BuildConfig.VERSION_NAME,
             faqItems = faqItems,

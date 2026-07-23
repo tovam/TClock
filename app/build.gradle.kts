@@ -12,6 +12,9 @@ plugins {
 
 val keystorePropertiesFile: File = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
+val appVersionName = project.property("VERSION_NAME").toString()
+val appVersionCode = project.property("VERSION_CODE").toString().toInt()
+val appDisplayName = "TClock $appVersionName"
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
@@ -24,8 +27,7 @@ fun hasSigningVars(): Boolean {
 }
 
 base {
-    val versionCode = project.property("VERSION_CODE").toString().toInt()
-    archivesName = "tclock-$versionCode"
+    archivesName = "tclock-$appVersionCode"
 }
 
 android {
@@ -35,8 +37,9 @@ android {
         applicationId = project.property("APP_ID").toString()
         minSdk = project.libs.versions.app.build.minimumSDK.get().toInt()
         targetSdk = project.libs.versions.app.build.targetSDK.get().toInt()
-        versionName = project.property("VERSION_NAME").toString()
-        versionCode = project.property("VERSION_CODE").toString().toInt()
+        versionName = appVersionName
+        versionCode = appVersionCode
+        resValue("string", "versioned_app_name", appDisplayName)
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
         }
@@ -65,6 +68,7 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
+        resValues = true
     }
 
     buildTypes {

@@ -30,7 +30,7 @@
         android:allowBackup="true"
         android:appCategory="productivity"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_launcher_name"
+        android:label="@string/versioned_app_name"
         android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/AppTheme">
 
