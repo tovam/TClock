@@ -18,11 +18,30 @@ class TClockPatternParserTest {
     }
 
     @Test
-    fun supportedUnitsAndCaseInsensitivityAreHandled() {
-        assertEquals(setOf(-30), TClockPatternParser.parseOffsets("TCLOCK:{30MIN}"))
-        assertEquals(setOf(-120), TClockPatternParser.parseOffsets("TcLoCk:{2H}"))
-        assertEquals(setOf(-24 * 60), TClockPatternParser.parseOffsets("tclock:{1d}"))
-        assertEquals(setOf(24 * 60), TClockPatternParser.parseOffsets("TCLOCK:{+1J}"))
+    fun previousUnitAliasesAndCaseInsensitivityAreHandled() {
+        listOf("m", "min", "mins", "minute", "minutes").forEach { unit ->
+            assertEquals(setOf(-2), TClockPatternParser.parseOffsets("tclock:{2$unit}"))
+        }
+        listOf("h", "hr", "hrs", "hour", "hours", "heure", "heures").forEach { unit ->
+            assertEquals(setOf(-120), TClockPatternParser.parseOffsets("tclock:{2$unit}"))
+        }
+        listOf("d", "day", "days", "j", "jour", "jours").forEach { unit ->
+            assertEquals(
+                setOf(-2 * 24 * 60),
+                TClockPatternParser.parseOffsets("tclock:{2$unit}")
+            )
+        }
+        assertEquals(setOf(30), TClockPatternParser.parseOffsets("TcLoCk:{+30MiNuTeS}"))
+    }
+
+    @Test
+    fun equivalentUnitAliasesAreDeduplicated() {
+        assertEquals(
+            setOf(-30),
+            TClockPatternParser.parseOffsets(
+                "tclock:{30m}, tclock:{30min}, tclock:{30minutes}"
+            )
+        )
     }
 
     @Test
@@ -38,10 +57,10 @@ class TClockPatternParserTest {
     fun bracesAndSupportedUnitAreMandatory() {
         assertTrue(TClockPatternParser.parseOffsets("tclock:30min").isEmpty())
         assertTrue(TClockPatternParser.parseOffsets("tclock:{30}").isEmpty())
-        assertTrue(TClockPatternParser.parseOffsets("tclock:{30m}").isEmpty())
-        assertTrue(TClockPatternParser.parseOffsets("tclock:{30minutes}").isEmpty())
-        assertTrue(TClockPatternParser.parseOffsets("tclock:{30hours}").isEmpty())
-        assertTrue(TClockPatternParser.parseOffsets("tclock:{30days}").isEmpty())
+        listOf("mn", "sec", "seconds", "week", "semaine", "minutee", "hrss", "joursx")
+            .forEach { unit ->
+                assertTrue(TClockPatternParser.parseOffsets("tclock:{30$unit}").isEmpty())
+            }
     }
 
     @Test
@@ -72,7 +91,7 @@ class TClockPatternParserTest {
     fun invalidMarkerDoesNotHideValidMarker() {
         assertEquals(
             setOf(-15),
-            TClockPatternParser.parseOffsets("tclock:{30minutes} then tclock:{15min}")
+            TClockPatternParser.parseOffsets("tclock:{30seconds} then tclock:{15min}")
         )
     }
 }

@@ -94,7 +94,7 @@
     <string name="calendar_diagnostics_description">Description complète</string>
     <string name="calendar_diagnostics_markers_and_alarms">Marqueurs et enregistrements d’alarme TClock</string>
     <string name="calendar_diagnostics_marker_none">Aucun marqueur tclock</string>
-    <string name="calendar_diagnostics_marker_invalid">Contient « tclock » mais aucun marqueur tclock:{délai} valide (unités : min, h, d ou j)</string>
+    <string name="calendar_diagnostics_marker_invalid">Contient « tclock » mais aucun marqueur tclock:{délai} valide (minutes : m/min/mins/minute(s) ; heures : h/hr(s)/hour(s)/heure(s) ; jours : d/day(s)/j/jour(s))</string>
     <string name="calendar_diagnostics_marker_valid">%1$d marqueur(s) tclock valide(s)</string>
     <string name="calendar_diagnostics_in_window">Dans la fenêtre d’événements de 15 jours</string>
     <string name="calendar_diagnostics_outside_window">Hors de la fenêtre d’événements de 15 jours</string>
