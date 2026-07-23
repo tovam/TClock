@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="@dimen/normal_margin"
-    app:cardCornerRadius="@dimen/small_margin"
+    android:layout_marginBottom="@dimen/tiny_margin"
+    app:cardCornerRadius="@dimen/normal_margin"
     app:cardElevation="0dp"
     app:strokeColor="@color/color_primary"
     app:strokeWidth="1dp">
@@ -13,73 +13,61 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="@dimen/normal_margin">
+        android:minHeight="76dp"
+        android:orientation="horizontal">
 
-        <org.fossify.commons.views.MyTextView
-            android:id="@+id/calendar_diagnostics_alarm_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textStyle="bold"
-            tools:text="Alarm #17 · Exact match" />
+        <View
+            android:id="@+id/calendar_diagnostics_alarm_color"
+            android:layout_width="5dp"
+            android:layout_height="match_parent"
+            android:background="@color/color_primary" />
 
-        <org.fossify.commons.views.MyTextView
-            android:id="@+id/calendar_diagnostics_alarm_trigger"
-            android:layout_width="match_parent"
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:paddingTop="@dimen/tiny_margin"
-            tools:text="Stored trigger: Jul 23, 14:30" />
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/normal_margin"
+            android:paddingVertical="@dimen/small_margin">
 
-        <org.fossify.commons.views.MyTextView
-            android:id="@+id/calendar_diagnostics_alarm_state"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:alpha="0.8"
-            android:paddingTop="@dimen/tiny_margin"
-            tools:text="Enabled · one-shot" />
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_alarm_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textStyle="bold"
+                tools:text="Team meeting" />
 
-        <org.fossify.commons.views.MyTextView
-            android:id="@+id/calendar_diagnostics_alarm_label"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="@dimen/tiny_margin"
-            tools:text="Stored label: Team meeting" />
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_alarm_trigger"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/tiny_margin"
+                tools:text="Jul 23, 2026, 14:00" />
 
-        <org.fossify.commons.views.MyTextView
-            android:id="@+id/calendar_diagnostics_alarm_drift"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="@dimen/normal_margin"
-            android:textStyle="bold"
-            android:visibility="gone"
-            tools:text="Differences: trigger, label" />
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_alarm_details"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:alpha="0.75"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:paddingTop="@dimen/tiny_margin"
+                tools:text="1 h before event · Event starts: Jul 23, 2026, 15:00" />
 
-        <org.fossify.commons.views.MyTextView
-            android:id="@+id/calendar_diagnostics_alarm_duplicate"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="@dimen/normal_margin"
-            android:textStyle="bold"
-            android:visibility="gone"
-            tools:text="Duplicate key" />
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_alarm_warning"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/tiny_margin"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="Metadata drift"
+                tools:visibility="visible" />
 
-        <org.fossify.commons.views.MyTextView
-            android:id="@+id/calendar_diagnostics_alarm_metadata"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:alpha="0.65"
-            android:paddingTop="@dimen/normal_margin"
-            android:textIsSelectable="true"
-            tools:text="Event #42 · start Jul 23, 15:00 · offset -30 min · days 0" />
-
-        <org.fossify.commons.views.MyTextView
-            android:id="@+id/calendar_diagnostics_alarm_key"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:alpha="0.65"
-            android:paddingTop="@dimen/tiny_margin"
-            android:textIsSelectable="true"
-            tools:text="Stored key: 42:123456789:-30" />
+        </LinearLayout>
 
     </LinearLayout>
 

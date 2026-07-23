@@ -61,6 +61,10 @@
     <string name="calendar_diagnostics_captured_summary">Read at %1$s</string>
     <string name="calendar_diagnostics_alarm_manager_note">This screen shows TClock’s own database records. Android does not provide an API to enumerate alarms registered in AlarmManager, so TClock cannot independently confirm the system scheduler’s contents.</string>
     <string name="calendar_diagnostics_empty">No calendar event overlaps the next 15 days, and no related TClock alarm record was found.</string>
+    <string name="calendar_diagnostics_planned_alarms_section">Planned TClock alarms (%1$d)</string>
+    <string name="calendar_diagnostics_planned_alarms_explanation">Future enabled one-shot alarm records, sorted by trigger time.</string>
+    <string name="calendar_diagnostics_no_planned_alarms">No future enabled one-shot alarm is currently recorded by TClock.</string>
+    <string name="calendar_diagnostics_compact_events_explanation">Calendar events shown compactly with their color, name, date and number of planned alarms.</string>
     <string name="calendar_diagnostics_window_events_section">Events in the next 15 days (%1$d)</string>
     <string name="calendar_diagnostics_window_events_explanation">Every visible calendar event on this device overlapping the rolling 15-day window, including events without a tclock marker.</string>
     <string name="calendar_diagnostics_related_events_section">Related events outside the window (%1$d)</string>
@@ -110,6 +114,8 @@
     <string name="calendar_diagnostics_alarm_metadata">Event #%1$d · start %2$s · offset %3$d min · days %4$d</string>
     <string name="calendar_diagnostics_alarm_key">Stored key: %1$s</string>
     <string name="calendar_diagnostics_empty_key">(empty)</string>
+    <string name="calendar_diagnostics_event_starts">Event: %1$s</string>
+    <string name="calendar_diagnostics_duplicate_short">Duplicate key</string>
     <string name="calendar_diagnostics_link_exact">Exact database match</string>
     <string name="calendar_diagnostics_link_drift">Metadata drift</string>
     <string name="calendar_diagnostics_link_marker_missing">Marker missing</string>
@@ -129,6 +135,10 @@
     <string name="calendar_diagnostics_hours_short">%1$d h</string>
     <string name="calendar_diagnostics_days_short">%1$d d</string>
     <string name="calendar_diagnostics_seconds_short">%1$d s</string>
+    <plurals name="calendar_diagnostics_alarm_count">
+        <item quantity="one">%d planned alarm</item>
+        <item quantity="other">%d planned alarms</item>
+    </plurals>
 
     <!-- Timer -->
     <string name="timers_notification_msg">Timers are running</string>
