@@ -40,6 +40,8 @@ android {
         versionName = appVersionName
         versionCode = appVersionCode
         resValue("string", "versioned_app_name", appDisplayName)
+        manifestPlaceholders["launcherAliasPackage"] =
+            project.property("APP_ID").toString()
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
         }

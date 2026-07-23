@@ -43,6 +43,7 @@ import org.fossify.clock.helpers.TOGGLE_STOPWATCH
 import org.fossify.commons.databinding.BottomTablayoutItemBinding
 import org.fossify.commons.extensions.appLaunched
 import org.fossify.commons.extensions.applyColorFilter
+import org.fossify.commons.extensions.checkAppIconColor
 import org.fossify.commons.extensions.convertToBitmap
 import org.fossify.commons.extensions.getBottomNavigationBackgroundColor
 import org.fossify.commons.extensions.getProperBackgroundColor
@@ -81,6 +82,7 @@ class MainActivity : SimpleActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         appLaunched(BuildConfig.APPLICATION_ID)
+        checkAppIconColor()
         setupOptionsMenu()
         refreshMenuItems()
 
