@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -53,3 +53,23 @@ jobs:
           path: app/build/outputs/apk/foss/release/*.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Prepare public APK
+        run: |
+          cp app/build/outputs/apk/foss/release/*.apk "$RUNNER_TEMP/TCLOCK-latest.apk"
+
+      - name: Publish public latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view latest >/dev/null 2>&1; then
+            gh release upload latest "$RUNNER_TEMP/TCLOCK-latest.apk" --clobber
+            gh release edit latest \
+              --title "TCLOCK latest" \
+              --notes "Signed APK built automatically from the latest main branch."
+          else
+            gh release create latest "$RUNNER_TEMP/TCLOCK-latest.apk" \
+              --target "${{ github.sha }}" \
+              --title "TCLOCK latest" \
+              --notes "Signed APK built automatically from the latest main branch."
+          fi
