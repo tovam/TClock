@@ -65,6 +65,9 @@
     <string name="calendar_alarm_before">Calendrier · %1$d min avant l’événement</string>
     <string name="calendar_alarm_after">Calendrier · %1$d min après l’événement</string>
     <string name="calendar_alarm_at_start">Calendrier · au début de l’événement</string>
+    <string name="remove_expired_alarm">Supprimer</string>
+    <string name="remove_expired_alarm_confirmation">Arrêter et supprimer cette alarme calendrier ? Cela annule aussi toute sonnerie ou alarme reportée en cours.</string>
+    <string name="calendar_alarm_expired_date">%1$s · déjà déclenchée</string>
     <string name="manual_alarm">Alarme manuelle</string>
     <string name="unnamed_alarm">Alarme sans nom</string>
     <string name="calendar_diagnostics_title">Événements calendrier ↔ alarmes TClock</string>
@@ -77,6 +80,7 @@
     <string name="calendar_diagnostics_sync_error_title">Synchronisation incomplète</string>
     <string name="calendar_diagnostics_attention_title">À vérifier</string>
     <string name="calendar_diagnostics_event_missing_title">Événement calendrier introuvable</string>
+    <string name="calendar_diagnostics_expired_title">Alarme calendrier déjà déclenchée</string>
     <string name="calendar_diagnostics_sync_needed_title">Synchronisation nécessaire</string>
     <string name="calendar_diagnostics_sync_needed_details">Certaines alarmes ne correspondent plus à leur événement. Synchronise pour les actualiser.</string>
     <string name="calendar_diagnostics_invalid_pattern_title">Format TCLOCK invalide</string>
@@ -94,6 +98,7 @@
     <string name="calendar_diagnostics_alarm_manager_note">Cet écran affiche les propres enregistrements de la base de données de TClock. Android ne fournit aucune API permettant d’énumérer les alarmes enregistrées dans AlarmManager ; TClock ne peut donc pas confirmer indépendamment le contenu du planificateur système.</string>
     <string name="calendar_diagnostics_empty">Aucun événement calendrier dans les 15 prochains jours.</string>
     <string name="calendar_diagnostics_planned_alarms_section">Alarmes prévues (%1$d)</string>
+    <string name="calendar_diagnostics_expired_alarms_section">Alarmes déjà déclenchées (%1$d)</string>
     <string name="calendar_diagnostics_planned_alarms_explanation">Enregistrements ponctuels actifs à venir, triés par heure de déclenchement.</string>
     <string name="calendar_diagnostics_no_planned_alarms">Aucune alarme prévue pour le moment.</string>
     <string name="calendar_diagnostics_compact_events_explanation">Événements affichés de façon compacte avec leur couleur, leur nom, leur date et leur nombre d’alarmes prévues.</string>
@@ -149,6 +154,7 @@
     <string name="calendar_diagnostics_event_starts">événement %1$s</string>
     <string name="calendar_diagnostics_duplicate_short">Alarme en double</string>
     <string name="calendar_diagnostics_event_missing_alarm_warning">Événement calendrier introuvable</string>
+    <string name="calendar_diagnostics_expired_alarm_warning">Déjà déclenchée · supprime-la dans Alarm pour arrêter toute sonnerie ou répétition</string>
     <string name="calendar_diagnostics_marker_missing_alarm_warning">Marqueur TCLOCK retiré</string>
     <string name="calendar_diagnostics_invalid_pattern_short">Format invalide · utilise TCLOCK:-60min</string>
     <string name="calendar_diagnostics_alarm_missing_short">Alarme pas encore créée</string>
@@ -186,6 +192,10 @@
     <plurals name="calendar_diagnostics_event_missing_issue">
         <item quantity="one">%1$d alarme existe encore, mais son événement calendrier a peut-être été supprimé, déplacé ou n’est plus synchronisé.</item>
         <item quantity="other">%1$d alarmes existent encore, mais leurs événements calendrier ont peut-être été supprimés, déplacés ou ne sont plus synchronisés.</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_expired_alarm_issue">
+        <item quantity="one">%1$d alarme calendrier a atteint son heure initiale et reste enregistrée. Supprime-la dans Alarm pour arrêter toute sonnerie ou répétition.</item>
+        <item quantity="other">%1$d alarmes calendrier ont atteint leur heure initiale et restent enregistrées. Supprime-les dans Alarm pour arrêter toute sonnerie ou répétition.</item>
     </plurals>
     <plurals name="calendar_diagnostics_marker_missing_issue">
         <item quantity="one">%1$d alarme correspond à un événement dont le marqueur TCLOCK a été retiré.</item>

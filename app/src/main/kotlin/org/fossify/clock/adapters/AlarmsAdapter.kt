@@ -38,6 +38,7 @@ class AlarmsAdapter(
     private var alarms: ArrayList<Alarm>,
     private val toggleAlarmInterface: ToggleAlarmInterface,
     recyclerView: MyRecyclerView,
+    private val removeExpiredCalendarAlarm: (Alarm) -> Unit,
     itemClick: (Any) -> Unit,
 ) : MyRecyclerViewAdapter(activity, recyclerView, itemClick), ItemTouchHelperContract {
 
@@ -137,6 +138,7 @@ class AlarmsAdapter(
     @SuppressLint("ClickableViewAccessibility")
     private fun setupView(view: View, alarm: Alarm, holder: ViewHolder) {
         val isSelected = selectedKeys.contains(alarm.id)
+        val isExpiredCalendarAlarm = alarm.isExpiredCalendarAlarm()
         ItemAlarmBinding.bind(view).apply {
             alarmHolder.isSelected = isSelected
             alarmDragHandle.beVisibleIf(selectedKeys.isNotEmpty())
@@ -162,11 +164,27 @@ class AlarmsAdapter(
             alarmLabel.beVisibleIf(alarm.label.isNotEmpty())
 
             alarmSwitch.isChecked = alarm.isEnabled
+            alarmSwitch.beVisibleIf(!isExpiredCalendarAlarm)
             alarmSwitch.isEnabled = !alarm.isCalendarAlarm()
             alarmSwitch.setColors(textColor, properPrimaryColor, backgroundColor)
             alarmSwitch.setOnClickListener {
                 if (!alarm.isCalendarAlarm()) {
                     toggleAlarm(binding = this, alarm = alarm)
+                }
+            }
+
+            alarmRemoveExpired.apply {
+                beVisibleIf(isExpiredCalendarAlarm)
+                setTextColor(properPrimaryColor)
+                setOnClickListener {
+                    ConfirmationDialog(
+                        activity = activity,
+                        messageId = R.string.remove_expired_alarm_confirmation,
+                        positive = R.string.remove_expired_alarm,
+                        negative = org.fossify.commons.R.string.cancel
+                    ) {
+                        removeExpiredCalendarAlarm(alarm)
+                    }
                 }
             }
         }
@@ -205,9 +223,14 @@ class AlarmsAdapter(
         alarm: Alarm, isEnabled: Boolean = alarm.isEnabled,
     ): String {
         if (alarm.isCalendarAlarm() && alarm.triggerAtMillis > 0L) {
-            return DateFormat.getDateInstance(DateFormat.MEDIUM).format(
+            val formattedDate = DateFormat.getDateInstance(DateFormat.MEDIUM).format(
                 Date(alarm.triggerAtMillis)
             )
+            return if (alarm.isExpiredCalendarAlarm()) {
+                activity.getString(R.string.calendar_alarm_expired_date, formattedDate)
+            } else {
+                formattedDate
+            }
         }
         if (alarm.isRecurring()) {
             return if (alarm.days == EVERY_DAY_BIT) {

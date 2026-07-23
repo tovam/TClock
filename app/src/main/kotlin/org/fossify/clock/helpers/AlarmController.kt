@@ -163,6 +163,28 @@ class AlarmController(
     }
 
     /**
+     * Removes a calendar one-shot whose original trigger is no longer in the future.
+     *
+     * Calendar alarms that are still upcoming remain managed by calendar synchronization.
+     * Expired records need an explicit escape hatch because they are intentionally retained
+     * briefly for dismissal and snooze, even if the process was killed while they were ringing.
+     */
+    fun removeExpiredCalendarAlarm(alarmId: Int) {
+        ensureBackgroundThread {
+            val alarm = db.getAlarmWithId(alarmId) ?: return@ensureBackgroundThread
+            if (!alarm.oneShot || !alarm.isExpiredCalendarAlarm()) {
+                return@ensureBackgroundThread
+            }
+
+            sendIntentToService(AlarmService.ACTION_STOP_ALARM, alarmId)
+            bus.post(AlarmEvent.Stopped(alarmId))
+            context.cancelAlarmClock(alarm)
+            db.deleteAlarms(arrayListOf(alarm))
+            notifyObservers()
+        }
+    }
+
+    /**
      * Snoozes an alarm that is currently ringing.
      *
      * - Stops the alarm sound/vibration service.

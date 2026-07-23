@@ -60,14 +60,21 @@ class AlarmService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action ?: ACTION_START_ALARM
         val alarmId = intent?.getIntExtra(ALARM_ID, -1) ?: -1
-        val newAlarm = applicationContext.dbHelper.getAlarmWithId(alarmId)
-        if (alarmId == -1 || newAlarm == null) {
+        if (alarmId == -1) {
             stopSelfIfIdle()
             return START_NOT_STICKY
         }
 
         when (action) {
-            ACTION_START_ALARM -> startNewAlarm(newAlarm)
+            ACTION_START_ALARM -> {
+                val newAlarm = applicationContext.dbHelper.getAlarmWithId(alarmId)
+                if (newAlarm == null) {
+                    stopSelfIfIdle()
+                    return START_NOT_STICKY
+                }
+                startNewAlarm(newAlarm)
+            }
+
             ACTION_STOP_ALARM -> stopActiveAlarm(alarmId)
             else -> throw IllegalArgumentException("Unknown action: $action")
         }

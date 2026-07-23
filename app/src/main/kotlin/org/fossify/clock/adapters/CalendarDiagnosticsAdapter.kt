@@ -55,6 +55,7 @@ class CalendarDiagnosticsAdapter(
         data class Alarm(
             val diagnostic: CalendarAlarmDiagnostic,
             val event: CalendarEventDiagnostic?,
+            val isExpired: Boolean,
         ) : Row
 
         data class Empty(val message: String) : Row
@@ -74,6 +75,7 @@ class CalendarDiagnosticsAdapter(
     )
 
     private data class OverviewIssues(
+        val expiredAlarms: Int,
         val eventMissingAlarms: Int,
         val syncableItems: Int,
         val invalidPatternEvents: Int,
@@ -176,7 +178,12 @@ class CalendarDiagnosticsAdapter(
         snapshot: CalendarDiagnosticsSnapshot,
         syncFailed: Boolean,
     ): List<Row> = buildList {
-        val plannedAlarms = collectPlannedAlarms(snapshot)
+        val storedAlarms = collectStoredAlarms(snapshot)
+        val plannedAlarms = storedAlarms.filter {
+            !it.isExpired &&
+                it.diagnostic.alarm.triggerAtMillis > snapshot.capturedAtMillis
+        }
+        val expiredAlarms = storedAlarms.filter { it.isExpired }
         val plannedAlarmIds = plannedAlarms.mapTo(mutableSetOf()) {
             it.diagnostic.alarm.id
         }
@@ -185,7 +192,11 @@ class CalendarDiagnosticsAdapter(
                 snapshot = snapshot,
                 plannedAlarmCount = plannedAlarms.size,
                 syncFailed = syncFailed,
-                issues = buildOverviewIssues(snapshot, plannedAlarms)
+                issues = buildOverviewIssues(
+                    snapshot = snapshot,
+                    plannedAlarms = plannedAlarms,
+                    expiredAlarmCount = expiredAlarms.size
+                )
             )
         )
 
@@ -201,6 +212,18 @@ class CalendarDiagnosticsAdapter(
             add(Row.Empty(context.getString(R.string.calendar_diagnostics_no_planned_alarms)))
         } else {
             addAll(plannedAlarms)
+        }
+
+        if (expiredAlarms.isNotEmpty()) {
+            add(
+                Row.Section(
+                    context.getString(
+                        R.string.calendar_diagnostics_expired_alarms_section,
+                        expiredAlarms.size
+                    )
+                )
+            )
+            addAll(expiredAlarms)
         }
 
         if (snapshot.providerState == CalendarDiagnosticsProviderState.AVAILABLE) {
@@ -236,22 +259,37 @@ class CalendarDiagnosticsAdapter(
         add(Row.Footer)
     }
 
-    private fun collectPlannedAlarms(
+    private fun collectStoredAlarms(
         snapshot: CalendarDiagnosticsSnapshot,
     ): List<Row.Alarm> {
         return buildList {
             snapshot.events.forEach { event ->
                 event.alarms.forEach { diagnostic ->
-                    add(Row.Alarm(diagnostic, event))
+                    add(
+                        Row.Alarm(
+                            diagnostic = diagnostic,
+                            event = event,
+                            isExpired = diagnostic.alarm.isExpiredCalendarAlarm(
+                                snapshot.capturedAtMillis
+                            )
+                        )
+                    )
                 }
             }
             snapshot.unlinkedAlarms.forEach { diagnostic ->
-                add(Row.Alarm(diagnostic, null))
+                add(
+                    Row.Alarm(
+                        diagnostic = diagnostic,
+                        event = null,
+                        isExpired = diagnostic.alarm.isExpiredCalendarAlarm(
+                            snapshot.capturedAtMillis
+                        )
+                    )
+                )
             }
         }.filter { row ->
             row.diagnostic.alarm.isEnabled &&
-                row.diagnostic.alarm.oneShot &&
-                row.diagnostic.alarm.triggerAtMillis > snapshot.capturedAtMillis
+                row.diagnostic.alarm.oneShot
         }.sortedWith(
             compareBy<Row.Alarm> { it.diagnostic.alarm.triggerAtMillis }
                 .thenBy { it.diagnostic.alarm.id }
@@ -261,8 +299,10 @@ class CalendarDiagnosticsAdapter(
     private fun buildOverviewIssues(
         snapshot: CalendarDiagnosticsSnapshot,
         plannedAlarms: List<Row.Alarm>,
+        expiredAlarmCount: Int,
     ): OverviewIssues {
         return OverviewIssues(
+            expiredAlarms = expiredAlarmCount,
             eventMissingAlarms = plannedAlarms.count {
                 it.diagnostic.linkStatus == CalendarAlarmLinkStatus.EVENT_MISSING
             },
@@ -479,7 +519,7 @@ class CalendarDiagnosticsAdapter(
                 setTextColor(textColor)
             }
             calendarDiagnosticsAlarmWarning.apply {
-                text = buildAlarmWarnings(diagnostic)
+                text = buildAlarmWarnings(row)
                 setTextColor(primaryColor)
                 beVisibleIf(text.isNotBlank())
             }
@@ -568,6 +608,18 @@ class CalendarDiagnosticsAdapter(
                     action = OverviewAction.REFRESH
                 )
 
+            issues.expiredAlarms > 0 -> OverviewStatus(
+                title = context.getString(
+                    R.string.calendar_diagnostics_expired_title
+                ),
+                details = context.resources.getQuantityString(
+                    R.plurals.calendar_diagnostics_expired_alarm_issue,
+                    issues.expiredAlarms,
+                    issues.expiredAlarms
+                ),
+                action = null
+            )
+
             issues.eventMissingAlarms > 0 -> OverviewStatus(
                 title = context.getString(
                     R.string.calendar_diagnostics_event_missing_title
@@ -636,8 +688,12 @@ class CalendarDiagnosticsAdapter(
         }
     }
 
-    private fun buildAlarmWarnings(diagnostic: CalendarAlarmDiagnostic): String {
+    private fun buildAlarmWarnings(row: Row.Alarm): String {
+        val diagnostic = row.diagnostic
         return buildList {
+            if (row.isExpired) {
+                add(context.getString(R.string.calendar_diagnostics_expired_alarm_warning))
+            }
             when (diagnostic.linkStatus) {
                 CalendarAlarmLinkStatus.EXACT -> Unit
                 CalendarAlarmLinkStatus.EVENT_MISSING -> add(

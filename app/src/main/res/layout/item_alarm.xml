@@ -21,7 +21,7 @@
         android:includeFontPadding="false"
         android:maxLines="1"
         android:textSize="@dimen/alarm_text_size"
-        app:layout_constraintEnd_toStartOf="@id/alarm_switch"
+        app:layout_constraintEnd_toStartOf="@id/alarm_action_holder"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="07:00" />
@@ -35,7 +35,7 @@
         android:maxLines="1"
         android:paddingHorizontal="@dimen/tiny_margin"
         android:textSize="@dimen/bigger_text_size"
-        app:layout_constraintEnd_toStartOf="@id/alarm_switch"
+        app:layout_constraintEnd_toStartOf="@id/alarm_action_holder"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/alarm_time"
         tools:text="Mon, Tue, Wed, Thu, Fri" />
@@ -49,20 +49,41 @@
         android:maxLines="1"
         android:paddingHorizontal="@dimen/tiny_margin"
         android:textSize="@dimen/bigger_text_size"
-        app:layout_constraintEnd_toStartOf="@id/alarm_switch"
+        app:layout_constraintEnd_toStartOf="@id/alarm_action_holder"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/alarm_days"
         tools:text="Good morning!" />
 
-    <org.fossify.commons.views.MyMaterialSwitch
-        android:id="@+id/alarm_switch"
+    <FrameLayout
+        android:id="@+id/alarm_action_holder"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingHorizontal="@dimen/normal_margin"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/alarm_drag_handle"
-        app:layout_constraintStart_toEndOf="@id/alarm_time"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
+
+        <org.fossify.commons.views.MyMaterialSwitch
+            android:id="@+id/alarm_switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="@dimen/normal_margin" />
+
+        <org.fossify.commons.views.MyTextView
+            android:id="@+id/alarm_remove_expired"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:minWidth="48dp"
+            android:paddingHorizontal="@dimen/normal_margin"
+            android:text="@string/remove_expired_alarm"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+    </FrameLayout>
 
     <ImageView
         android:id="@+id/alarm_drag_handle"

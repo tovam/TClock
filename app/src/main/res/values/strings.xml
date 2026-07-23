@@ -47,6 +47,9 @@
     <string name="calendar_alarm_before">Calendar · %1$d min before event</string>
     <string name="calendar_alarm_after">Calendar · %1$d min after event</string>
     <string name="calendar_alarm_at_start">Calendar · at event start</string>
+    <string name="remove_expired_alarm">Remove</string>
+    <string name="remove_expired_alarm_confirmation">Stop and remove this calendar alarm? This also cancels any active ring or snooze.</string>
+    <string name="calendar_alarm_expired_date">%1$s · already triggered</string>
     <string name="manual_alarm">Manual alarm</string>
     <string name="unnamed_alarm">Unnamed alarm</string>
     <string name="calendar_diagnostics_title">Calendar events ↔ TClock alarms</string>
@@ -59,6 +62,7 @@
     <string name="calendar_diagnostics_sync_error_title">Synchronization incomplete</string>
     <string name="calendar_diagnostics_attention_title">Needs attention</string>
     <string name="calendar_diagnostics_event_missing_title">Calendar event not found</string>
+    <string name="calendar_diagnostics_expired_title">Calendar alarm already triggered</string>
     <string name="calendar_diagnostics_sync_needed_title">Synchronization needed</string>
     <string name="calendar_diagnostics_sync_needed_details">Some alarms no longer match their events. Sync to update them.</string>
     <string name="calendar_diagnostics_invalid_pattern_title">Invalid TCLOCK format</string>
@@ -76,6 +80,7 @@
     <string name="calendar_diagnostics_alarm_manager_note">This screen shows TClock’s own database records. Android does not provide an API to enumerate alarms registered in AlarmManager, so TClock cannot independently confirm the system scheduler’s contents.</string>
     <string name="calendar_diagnostics_empty">No calendar event in the next 15 days.</string>
     <string name="calendar_diagnostics_planned_alarms_section">Planned alarms (%1$d)</string>
+    <string name="calendar_diagnostics_expired_alarms_section">Already-triggered alarms (%1$d)</string>
     <string name="calendar_diagnostics_planned_alarms_explanation">Future enabled one-shot alarm records, sorted by trigger time.</string>
     <string name="calendar_diagnostics_no_planned_alarms">No planned alarm for now.</string>
     <string name="calendar_diagnostics_compact_events_explanation">Calendar events shown compactly with their color, name, date and number of planned alarms.</string>
@@ -131,6 +136,7 @@
     <string name="calendar_diagnostics_event_starts">event %1$s</string>
     <string name="calendar_diagnostics_duplicate_short">Duplicate alarm</string>
     <string name="calendar_diagnostics_event_missing_alarm_warning">Calendar event not found</string>
+    <string name="calendar_diagnostics_expired_alarm_warning">Already triggered · remove it from Alarm to stop any ring or snooze</string>
     <string name="calendar_diagnostics_marker_missing_alarm_warning">TCLOCK marker removed</string>
     <string name="calendar_diagnostics_invalid_pattern_short">Invalid format · use TCLOCK:-60min</string>
     <string name="calendar_diagnostics_alarm_missing_short">Alarm not created yet</string>
@@ -168,6 +174,10 @@
     <plurals name="calendar_diagnostics_event_missing_issue">
         <item quantity="one">%1$d alarm still exists, but its calendar event may have been deleted, moved, or may no longer be synchronized.</item>
         <item quantity="other">%1$d alarms still exist, but their calendar events may have been deleted, moved, or may no longer be synchronized.</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_expired_alarm_issue">
+        <item quantity="one">%1$d calendar alarm has reached its original trigger time and is still stored. Remove it from Alarm to stop any ring or snooze.</item>
+        <item quantity="other">%1$d calendar alarms have reached their original trigger time and are still stored. Remove them from Alarm to stop any ring or snooze.</item>
     </plurals>
     <plurals name="calendar_diagnostics_marker_missing_issue">
         <item quantity="one">%1$d alarm belongs to an event whose TCLOCK marker was removed.</item>

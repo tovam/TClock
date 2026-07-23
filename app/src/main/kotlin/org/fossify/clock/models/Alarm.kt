@@ -31,6 +31,9 @@ data class Alarm(
 
     fun isCalendarAlarm() = source == SOURCE_CALENDAR
 
+    fun isExpiredCalendarAlarm(nowMillis: Long = System.currentTimeMillis()) =
+        isCalendarAlarm() && oneShot && triggerAtMillis > 0L && triggerAtMillis <= nowMillis
+
     companion object {
         const val SOURCE_MANUAL = "manual"
         const val SOURCE_CALENDAR = "calendar"

@@ -151,7 +151,11 @@ class AlarmFragment : Fragment(), ToggleAlarmInterface {
                     activity = safeActivity,
                     alarms = alarms,
                     toggleAlarmInterface = this,
-                    recyclerView = binding.alarmsList
+                    recyclerView = binding.alarmsList,
+                    removeExpiredCalendarAlarm = { alarm ->
+                        requireContext().alarmController
+                            .removeExpiredCalendarAlarm(alarm.id)
+                    }
                 ) {
                     if (it is Alarm) {
                         if (it.isCalendarAlarm()) {
