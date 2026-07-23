@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="@dimen/normal_margin">
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/calendar_diagnostics_marker_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textStyle="bold"
+        tools:text="30 min before event" />
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/calendar_diagnostics_marker_disposition"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:alpha="0.8"
+        android:paddingTop="@dimen/tiny_margin"
+        tools:text="Eligible in the next 15 days" />
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/calendar_diagnostics_marker_trigger"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/tiny_margin"
+        tools:text="Expected trigger: Jul 23, 14:30" />
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/calendar_diagnostics_marker_key"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:alpha="0.65"
+        android:paddingTop="@dimen/tiny_margin"
+        android:textIsSelectable="true"
+        tools:text="Marker key: 42:123456789:-30" />
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/calendar_diagnostics_marker_no_alarm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/normal_margin"
+        android:textStyle="italic"
+        android:visibility="gone"
+        tools:text="No linked TClock alarm record" />
+
+    <LinearLayout
+        android:id="@+id/calendar_diagnostics_marker_alarms"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+</LinearLayout>

@@ -5,13 +5,17 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
 import org.fossify.clock.fragments.AlarmFragment
+import org.fossify.clock.fragments.CalendarDiagnosticsFragment
 import org.fossify.clock.fragments.ClockFragment
 import org.fossify.clock.fragments.StopwatchFragment
 import org.fossify.clock.fragments.TimerFragment
 import org.fossify.clock.helpers.*
 import org.fossify.commons.models.AlarmSound
 
-class ViewPagerAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm) {
+class ViewPagerAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(
+    fm,
+    BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT
+) {
     private val fragments = HashMap<Int, Fragment>()
 
     override fun getItem(position: Int): Fragment {
@@ -38,6 +42,7 @@ class ViewPagerAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm) {
         TAB_ALARM_INDEX -> AlarmFragment()
         TAB_STOPWATCH_INDEX -> StopwatchFragment()
         TAB_TIMER_INDEX -> TimerFragment()
+        TAB_CALENDAR_INDEX -> CalendarDiagnosticsFragment()
         else -> throw RuntimeException("Trying to fetch unknown fragment id $position")
     }
 

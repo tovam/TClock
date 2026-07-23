@@ -37,8 +37,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
+            app:tabGravity="fill"
             app:tabIndicator="@null"
-            app:tabMinWidth="150dp"
+            app:tabMinWidth="0dp"
+            app:tabMode="fixed"
             app:tabRippleColor="@null" />
 
     </RelativeLayout>

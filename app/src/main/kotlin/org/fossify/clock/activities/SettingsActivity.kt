@@ -20,6 +20,7 @@ import org.fossify.clock.helpers.ExportHelper
 import org.fossify.clock.helpers.IMPORT_BACKUP_MIME_TYPES
 import org.fossify.clock.helpers.ImportHelper
 import org.fossify.clock.helpers.TAB_ALARM
+import org.fossify.clock.helpers.TAB_CALENDAR
 import org.fossify.clock.helpers.TAB_CLOCK
 import org.fossify.clock.helpers.TAB_STOPWATCH
 import org.fossify.clock.helpers.TAB_TIMER
@@ -144,6 +145,7 @@ class SettingsActivity : SimpleActivity() {
                 RadioItem(TAB_ALARM, getString(org.fossify.commons.R.string.alarm)),
                 RadioItem(TAB_STOPWATCH, getString(R.string.stopwatch)),
                 RadioItem(TAB_TIMER, getString(R.string.timer)),
+                RadioItem(TAB_CALENDAR, getString(R.string.calendar)),
                 RadioItem(TAB_LAST_USED, getString(org.fossify.commons.R.string.last_used_tab))
             )
 
@@ -169,6 +171,7 @@ class SettingsActivity : SimpleActivity() {
             TAB_ALARM -> org.fossify.commons.R.string.alarm
             TAB_STOPWATCH -> R.string.stopwatch
             TAB_TIMER -> R.string.timer
+            TAB_CALENDAR -> R.string.calendar
             else -> org.fossify.commons.R.string.last_used_tab
         }
     )

@@ -43,7 +43,7 @@ const val LAST_DATA_EXPORT_PATH = "last_alarms_export_path"
 const val MIGRATE_FIRST_DAY_OF_WEEK = "migrate_first_day_of_week"
 const val CALENDAR_PERMISSION_ASKED = "calendar_permission_asked"
 
-const val TABS_COUNT = 4
+const val TABS_COUNT = 5
 const val EDITED_TIME_ZONE_SEPARATOR = ":"
 const val ALARM_ID = "alarm_id"
 const val NOTIFICATION_ID = "notification_id"
@@ -71,10 +71,12 @@ const val TAB_CLOCK = 1
 const val TAB_ALARM = 2
 const val TAB_STOPWATCH = 4
 const val TAB_TIMER = 8
+const val TAB_CALENDAR = 16
 const val TAB_CLOCK_INDEX = 0
 const val TAB_ALARM_INDEX = 1
 const val TAB_STOPWATCH_INDEX = 2
 const val TAB_TIMER_INDEX = 3
+const val TAB_CALENDAR_INDEX = 4
 
 const val TIMER_ID = "timer_id"
 const val INVALID_TIMER_ID = -1

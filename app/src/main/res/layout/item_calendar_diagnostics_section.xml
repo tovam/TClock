@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="@dimen/activity_margin"
+    android:paddingBottom="@dimen/normal_margin">
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/calendar_diagnostics_section_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/big_text_size"
+        android:textStyle="bold"
+        tools:text="Events in the next 15 days (12)" />
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/calendar_diagnostics_section_details"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:alpha="0.75"
+        android:paddingTop="@dimen/tiny_margin"
+        tools:text="Every event overlapping the rolling window." />
+
+</LinearLayout>

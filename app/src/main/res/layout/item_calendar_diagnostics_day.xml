@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<org.fossify.commons.views.MyTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/calendar_diagnostics_day"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:alpha="0.8"
+    android:paddingTop="@dimen/normal_margin"
+    android:paddingBottom="@dimen/small_margin"
+    android:textStyle="bold"
+    tools:text="Thursday, July 23, 2026" />

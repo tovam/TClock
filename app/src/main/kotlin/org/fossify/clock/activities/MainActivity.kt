@@ -30,6 +30,8 @@ import org.fossify.clock.helpers.STOPWATCH_TOGGLE_ACTION
 import org.fossify.clock.helpers.TABS_COUNT
 import org.fossify.clock.helpers.TAB_ALARM
 import org.fossify.clock.helpers.TAB_ALARM_INDEX
+import org.fossify.clock.helpers.TAB_CALENDAR
+import org.fossify.clock.helpers.TAB_CALENDAR_INDEX
 import org.fossify.clock.helpers.TAB_CLOCK
 import org.fossify.clock.helpers.TAB_CLOCK_INDEX
 import org.fossify.clock.helpers.TAB_STOPWATCH
@@ -286,13 +288,15 @@ class MainActivity : SimpleActivity() {
             R.drawable.ic_clock_vector,
             R.drawable.ic_alarm_vector,
             R.drawable.ic_stopwatch_vector,
-            R.drawable.ic_hourglass_vector
+            R.drawable.ic_hourglass_vector,
+            R.drawable.ic_calendar_vector
         )
         val tabLabels = arrayOf(
             R.string.clock,
             org.fossify.commons.R.string.alarm,
             R.string.stopwatch,
-            R.string.timer
+            R.string.timer,
+            R.string.calendar
         )
 
         tabDrawables.forEachIndexed { i, drawableId ->
@@ -346,21 +350,23 @@ class MainActivity : SimpleActivity() {
     }
 
     private fun getInactiveTabIndexes(activeIndex: Int): List<Int> {
-        return arrayListOf(0, 1, 2, 3).filter { it != activeIndex }
+        return (0 until TABS_COUNT).filter { it != activeIndex }
     }
 
     private fun getSelectedTabDrawableIds() = arrayOf(
         R.drawable.ic_clock_filled_vector,
         R.drawable.ic_alarm_filled_vector,
         R.drawable.ic_stopwatch_filled_vector,
-        R.drawable.ic_hourglass_filled_vector
+        R.drawable.ic_hourglass_filled_vector,
+        R.drawable.ic_calendar_filled_vector
     )
 
     private fun getDeselectedTabDrawableIds() = arrayOf(
         org.fossify.commons.R.drawable.ic_clock_vector,
         R.drawable.ic_alarm_vector,
         R.drawable.ic_stopwatch_vector,
-        R.drawable.ic_hourglass_vector
+        R.drawable.ic_hourglass_vector,
+        R.drawable.ic_calendar_vector
     )
 
     private fun launchSettings() {
@@ -450,6 +456,7 @@ class MainActivity : SimpleActivity() {
             TAB_ALARM -> TAB_ALARM_INDEX
             TAB_STOPWATCH -> TAB_STOPWATCH_INDEX
             TAB_TIMER -> TAB_TIMER_INDEX
+            TAB_CALENDAR -> TAB_CALENDAR_INDEX
             else -> config.lastUsedViewPagerPage
         }
     }

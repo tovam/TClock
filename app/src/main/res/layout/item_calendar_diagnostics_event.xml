@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/normal_margin"
+    app:cardCornerRadius="@dimen/normal_margin"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/color_primary"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <View
+            android:id="@+id/calendar_diagnostics_event_color"
+            android:layout_width="4dp"
+            android:layout_height="match_parent"
+            android:background="@color/color_primary" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="@dimen/normal_margin">
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_event_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/bigger_text_size"
+                android:textStyle="bold"
+                tools:text="Team meeting" />
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_event_calendar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:alpha="0.75"
+                android:paddingTop="@dimen/tiny_margin"
+                tools:text="Work · calendar #3" />
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_event_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/normal_margin"
+                tools:text="Jul 23, 15:00 – Jul 23, 16:00" />
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_event_flags"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:alpha="0.8"
+                android:paddingTop="@dimen/tiny_margin"
+                tools:text="In 15-day window" />
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_event_marker_state"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/normal_margin"
+                android:textStyle="bold"
+                tools:text="1 valid tclock marker" />
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_event_technical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:alpha="0.65"
+                android:paddingTop="@dimen/tiny_margin"
+                android:textIsSelectable="true"
+                tools:text="Event #42 · occurrence Jul 23, 15:00" />
+
+            <LinearLayout
+                android:id="@+id/calendar_diagnostics_event_description_holder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="@dimen/normal_margin"
+                android:visibility="gone">
+
+                <org.fossify.commons.views.MyTextView
+                    android:id="@+id/calendar_diagnostics_event_description_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/calendar_diagnostics_description"
+                    android:textStyle="bold" />
+
+                <org.fossify.commons.views.MyTextView
+                    android:id="@+id/calendar_diagnostics_event_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="@dimen/tiny_margin"
+                    android:textIsSelectable="true"
+                    tools:text="Discuss roadmap. tclock:{30min}" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/calendar_diagnostics_event_relations_holder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="@dimen/normal_margin"
+                android:visibility="gone">
+
+                <org.fossify.commons.views.MyTextView
+                    android:id="@+id/calendar_diagnostics_event_relations_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/calendar_diagnostics_markers_and_alarms"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/calendar_diagnostics_event_relations"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

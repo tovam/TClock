@@ -3,7 +3,6 @@ package org.fossify.clock.helpers
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.provider.CalendarContract
 import android.util.Log
 import androidx.core.content.ContextCompat
 import org.fossify.clock.R
@@ -44,6 +43,10 @@ object CalendarAlarmSync {
     fun hasCalendarPermission(context: Context): Boolean {
         return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
             PackageManager.PERMISSION_GRANTED
+    }
+
+    fun loadDiagnostics(context: Context): CalendarDiagnosticsSnapshot = synchronized(lock) {
+        CalendarDiagnosticsRepository.load(context)
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -192,76 +195,41 @@ object CalendarAlarmSync {
         triggerEndMillis: Long,
     ): Map<String, Candidate> {
         val result = LinkedHashMap<String, Candidate>()
-        val projection = arrayOf(
-            CalendarContract.Instances.EVENT_ID,
-            CalendarContract.Instances.BEGIN,
-            CalendarContract.Events.TITLE,
-            CalendarContract.Events.DESCRIPTION,
-            CalendarContract.Events.ALL_DAY,
-            CalendarContract.Events.STATUS
+        val records = CalendarDiagnosticsRepository.readVisibleInstances(
+            context = context,
+            queryBeginMillis = queryBeginMillis,
+            queryEndMillis = queryEndMillis
         )
+        records.forEach recordLoop@{ record ->
+            if (record.isAllDay || record.isCanceled) {
+                return@recordLoop
+            }
 
-        val cursor = CalendarContract.Instances.query(
-            context.contentResolver,
-            projection,
-            queryBeginMillis,
-            queryEndMillis
-        ) ?: throw IllegalStateException("Calendar provider returned no cursor")
-
-        cursor.use {
-            val eventIdIndex = cursor.getColumnIndexOrThrow(CalendarContract.Instances.EVENT_ID)
-            val beginIndex = cursor.getColumnIndexOrThrow(CalendarContract.Instances.BEGIN)
-            val titleIndex = cursor.getColumnIndexOrThrow(CalendarContract.Events.TITLE)
-            val descriptionIndex =
-                cursor.getColumnIndexOrThrow(CalendarContract.Events.DESCRIPTION)
-            val allDayIndex = cursor.getColumnIndexOrThrow(CalendarContract.Events.ALL_DAY)
-            val statusIndex = cursor.getColumnIndexOrThrow(CalendarContract.Events.STATUS)
-
-            while (cursor.moveToNext()) {
-                if (cursor.getInt(allDayIndex) == 1) {
-                    continue
+            val offsets = TClockPatternParser.parseOffsets(record.description)
+            val title = record.title?.takeIf { it.isNotBlank() }
+                ?: context.getString(R.string.calendar_untitled_event)
+            offsets.forEach offsetLoop@{ offsetMinutes ->
+                if (!CalendarAlarmWindow.supportsOffset(offsetMinutes)) {
+                    return@offsetLoop
                 }
-                if (
-                    !cursor.isNull(statusIndex) &&
-                    cursor.getInt(statusIndex) == CalendarContract.Events.STATUS_CANCELED
-                ) {
-                    continue
-                }
-
-                val description =
-                    if (cursor.isNull(descriptionIndex)) "" else cursor.getString(descriptionIndex)
-                val offsets = TClockPatternParser.parseOffsets(description)
-                if (offsets.isEmpty()) {
-                    continue
-                }
-
-                val eventId = cursor.getLong(eventIdIndex)
-                val eventStartMillis = cursor.getLong(beginIndex)
-                val title = if (cursor.isNull(titleIndex)) {
-                    context.getString(R.string.calendar_untitled_event)
-                } else {
-                    cursor.getString(titleIndex).ifBlank {
-                        context.getString(R.string.calendar_untitled_event)
-                    }
-                }
-
-                offsets.forEach { offsetMinutes ->
-                    if (!CalendarAlarmWindow.supportsOffset(offsetMinutes)) {
-                        return@forEach
-                    }
-                    val triggerAtMillis =
-                        eventStartMillis + TimeUnit.MINUTES.toMillis(offsetMinutes.toLong())
-                    if (triggerAtMillis in (triggerBeginMillis + 1)..triggerEndMillis) {
-                        val key = "$eventId:$eventStartMillis:$offsetMinutes"
-                        result[key] = Candidate(
-                            key = key,
-                            eventId = eventId,
-                            eventStartMillis = eventStartMillis,
-                            triggerAtMillis = triggerAtMillis,
-                            offsetMinutes = offsetMinutes,
-                            label = title
-                        )
-                    }
+                val triggerAtMillis =
+                    record.beginMillis + TimeUnit.MINUTES.toMillis(offsetMinutes.toLong())
+                if (triggerAtMillis in (triggerBeginMillis + 1)..triggerEndMillis) {
+                    val key = CalendarAlarmKey(
+                        occurrence = CalendarOccurrenceKey(
+                            eventId = record.eventId,
+                            beginMillis = record.beginMillis
+                        ),
+                        offsetMinutes = offsetMinutes
+                    ).persistedValue
+                    result[key] = Candidate(
+                        key = key,
+                        eventId = record.eventId,
+                        eventStartMillis = record.beginMillis,
+                        triggerAtMillis = triggerAtMillis,
+                        offsetMinutes = offsetMinutes,
+                        label = title
+                    )
                 }
             }
         }
