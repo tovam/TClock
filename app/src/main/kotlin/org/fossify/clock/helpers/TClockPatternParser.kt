@@ -2,7 +2,8 @@ package org.fossify.clock.helpers
 
 object TClockPatternParser {
     private val pattern = Regex(
-        pattern = """(?i)\bTCLOCK\s*:\s*\{?\s*([+-]?)\s*(\d{1,6})\s*(minutes?|mins?|min|m|heures?|hours?|hrs?|h|jours?|days?|d|j)?\s*\}?(?![\p{L}\p{N}_])"""
+        pattern = """(?<![\p{L}\p{N}_])tclock:\{([+-]?)([0-9]+)(min|h|d|j)\}(?![\p{L}\p{N}_}])""",
+        option = RegexOption.IGNORE_CASE
     )
 
     /**
@@ -16,18 +17,19 @@ object TClockPatternParser {
             val sign = match.groupValues[1]
             val value = match.groupValues[2].toLongOrNull() ?: return@mapNotNull null
             val unit = match.groupValues[3].lowercase()
-            val multiplier = when {
-                unit.startsWith("h") -> 60L
-                unit.startsWith("d") || unit.startsWith("j") -> 24L * 60L
-                else -> 1L
+            val multiplier = when (unit) {
+                "min" -> 1L
+                "h" -> 60L
+                "d", "j" -> 24L * 60L
+                else -> return@mapNotNull null
             }
-            val minutes = value * multiplier
-            if (minutes > Int.MAX_VALUE) {
+            if (value > Int.MAX_VALUE.toLong() / multiplier) {
                 null
             } else {
+                val minutes = (value * multiplier).toInt()
                 when (sign) {
-                    "+" -> minutes.toInt()
-                    else -> -minutes.toInt()
+                    "+" -> minutes
+                    else -> -minutes
                 }
             }
         }.toSet()
