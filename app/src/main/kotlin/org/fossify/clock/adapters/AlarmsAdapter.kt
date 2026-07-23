@@ -195,13 +195,18 @@ class AlarmsAdapter(
             alarmLabel.beVisibleIf(alarm.label.isNotEmpty())
 
             alarmSwitch.isChecked = alarm.isEnabled
-            alarmSwitch.beVisibleIf(!isExpiredCalendarAlarm)
+            alarmSwitch.beVisibleIf(!alarm.isCalendarAlarm())
             alarmSwitch.isEnabled = !alarm.isCalendarAlarm()
             alarmSwitch.setColors(textColor, properPrimaryColor, backgroundColor)
             alarmSwitch.setOnClickListener {
                 if (!alarm.isCalendarAlarm()) {
                     toggleAlarm(binding = this, alarm = alarm)
                 }
+            }
+
+            alarmCalendarIndicator.apply {
+                beVisibleIf(alarm.isCalendarAlarm() && !isExpiredCalendarAlarm)
+                applyColorFilter(properPrimaryColor)
             }
 
             alarmRemoveExpired.apply {

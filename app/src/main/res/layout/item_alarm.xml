@@ -9,14 +9,13 @@
     android:clickable="true"
     android:focusable="true"
     android:foreground="@drawable/selector"
-    android:paddingHorizontal="@dimen/activity_margin"
-    android:paddingVertical="@dimen/medium_margin">
+    android:paddingHorizontal="@dimen/activity_margin">
 
     <org.fossify.commons.views.MyTextView
         android:id="@+id/alarm_section_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:paddingTop="@dimen/normal_margin"
+        android:paddingTop="@dimen/activity_margin"
         android:paddingBottom="@dimen/small_margin"
         android:textSize="@dimen/big_text_size"
         android:textStyle="bold"
@@ -29,59 +28,79 @@
 
     <org.fossify.commons.views.MyTextView
         android:id="@+id/alarm_time"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:fontFeatureSettings="tnum"
         android:includeFontPadding="false"
         android:maxLines="1"
-        android:textSize="@dimen/alarm_text_size"
-        app:layout_constraintEnd_toStartOf="@id/alarm_action_holder"
+        android:minHeight="60dp"
+        android:gravity="center_vertical"
+        android:textSize="@dimen/alarm_list_time_text_size"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/alarm_section_title"
         tools:text="07:00" />
 
-    <org.fossify.commons.views.MyTextView
-        android:id="@+id/alarm_days"
+    <LinearLayout
+        android:id="@+id/alarm_details_holder"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:paddingHorizontal="@dimen/tiny_margin"
-        android:textSize="@dimen/bigger_text_size"
+        android:layout_marginStart="@dimen/normal_margin"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="@id/alarm_time"
         app:layout_constraintEnd_toStartOf="@id/alarm_action_holder"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/alarm_time"
-        tools:text="Mon, Tue, Wed, Thu, Fri" />
+        app:layout_constraintStart_toEndOf="@id/alarm_time"
+        app:layout_constraintTop_toTopOf="@id/alarm_time">
 
-    <org.fossify.commons.views.MyTextView
-        android:id="@+id/alarm_label"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:paddingHorizontal="@dimen/tiny_margin"
-        android:textSize="@dimen/bigger_text_size"
-        app:layout_constraintEnd_toStartOf="@id/alarm_action_holder"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/alarm_days"
-        tools:text="Good morning!" />
+        <org.fossify.commons.views.MyTextView
+            android:id="@+id/alarm_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textSize="@dimen/big_text_size"
+            android:textStyle="bold"
+            tools:text="Good morning!" />
+
+        <org.fossify.commons.views.MyTextView
+            android:id="@+id/alarm_days"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:alpha="0.72"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:paddingTop="@dimen/tiny_margin"
+            android:textSize="@dimen/normal_text_size"
+            tools:text="Mon, Tue, Wed, Thu, Fri" />
+
+    </LinearLayout>
 
     <FrameLayout
         android:id="@+id/alarm_action_holder"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_height="48dp"
+        app:layout_constraintBottom_toBottomOf="@id/alarm_time"
         app:layout_constraintEnd_toStartOf="@id/alarm_drag_handle"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="@id/alarm_time">
 
         <org.fossify.commons.views.MyMaterialSwitch
             android:id="@+id/alarm_switch"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="@dimen/normal_margin" />
+            android:layout_height="match_parent"
+            android:paddingHorizontal="@dimen/small_margin" />
+
+        <ImageView
+            android:id="@+id/alarm_calendar_indicator"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="@string/calendar"
+            android:padding="13dp"
+            android:src="@drawable/ic_calendar_vector"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
         <org.fossify.commons.views.MyTextView
             android:id="@+id/alarm_remove_expired"
@@ -92,7 +111,7 @@
             android:focusable="true"
             android:gravity="center"
             android:minWidth="48dp"
-            android:paddingHorizontal="@dimen/normal_margin"
+            android:paddingHorizontal="@dimen/small_margin"
             android:text="@string/remove_expired_alarm"
             android:textStyle="bold"
             android:visibility="gone"
@@ -102,14 +121,14 @@
 
     <ImageView
         android:id="@+id/alarm_drag_handle"
-        android:layout_width="@dimen/drag_handle_size"
-        android:layout_height="@dimen/drag_handle_size"
-        android:paddingHorizontal="@dimen/medium_margin"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:contentDescription="@string/reorder_alarm"
+        android:padding="12dp"
         android:src="@drawable/ic_drag_handle_vector"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toBottomOf="@id/alarm_time"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/alarm_switch"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="@id/alarm_time" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
