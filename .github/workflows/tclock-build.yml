@@ -49,9 +49,12 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Reject unsafe collection casts
+      - name: Reject known unsafe collection paths
         run: |
           if grep -R -n -E 'as[[:space:]]+ArrayList|toList\(\)[[:space:]]+as' app/src/main/kotlin; then
+            exit 1
+          fi
+          if grep -R -n -w 'getSelectedDaysString' app/src/main/kotlin; then
             exit 1
           fi
 
