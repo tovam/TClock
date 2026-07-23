@@ -46,14 +46,6 @@ jobs:
             -PVERSION_NAME=1.0.${{ github.run_number }} \
             --no-daemon
 
-      - name: Upload signed APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: tclock-signed-apk-${{ github.run_number }}
-          path: app/build/outputs/apk/foss/release/*.apk
-          if-no-files-found: error
-          retention-days: 30
-
       - name: Prepare public APK
         run: |
           cp app/build/outputs/apk/foss/release/*.apk "$RUNNER_TEMP/TCLOCK-latest.apk"
