@@ -55,6 +55,12 @@
     <string name="calendar_alarm_section">Calendar alarms (%1$d)</string>
     <string name="reorder_alarm">Reorder alarm</string>
     <string name="unnamed_alarm">Unnamed alarm</string>
+    <string name="clock_upcoming_alarms_title">Next scheduled alarms</string>
+    <string name="clock_upcoming_alarms_empty">No scheduled alarm</string>
+    <string name="clock_upcoming_alarm_line">• %1$s — %2$s</string>
+    <string name="clock_upcoming_calendar_source">Calendar · %1$s</string>
+    <string name="clock_upcoming_manual_source">Manual · %1$s</string>
+    <string name="clock_upcoming_manual_source_without_label">Manual</string>
     <string name="calendar_diagnostics_title">Calendar events ↔ TClock alarms</string>
     <string name="calendar_diagnostics_overview_meta">%1$s – %2$s · Checked at %3$s</string>
     <string name="calendar_diagnostics_sync_short">Sync</string>

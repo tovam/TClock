@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<org.fossify.commons.views.MyTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="@dimen/clock_upcoming_row_min_height"
+    android:alpha="0.76"
+    android:ellipsize="end"
+    android:gravity="center_vertical"
+    android:includeFontPadding="false"
+    android:maxLines="1"
+    android:paddingVertical="@dimen/tiny_margin"
+    android:textSize="@dimen/clock_upcoming_text_size"
+    tools:text="Fri 24 Jul · 08:30 — Calendar · Team meeting" />

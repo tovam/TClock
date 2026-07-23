@@ -73,6 +73,12 @@
     <string name="calendar_alarm_section">Alarmes calendrier (%1$d)</string>
     <string name="reorder_alarm">Réorganiser l’alarme</string>
     <string name="unnamed_alarm">Alarme sans nom</string>
+    <string name="clock_upcoming_alarms_title">Prochaines alarmes prévues</string>
+    <string name="clock_upcoming_alarms_empty">Aucune alarme prévue</string>
+    <string name="clock_upcoming_alarm_line">• %1$s — %2$s</string>
+    <string name="clock_upcoming_calendar_source">Calendrier · %1$s</string>
+    <string name="clock_upcoming_manual_source">Manuelle · %1$s</string>
+    <string name="clock_upcoming_manual_source_without_label">Manuelle</string>
     <string name="calendar_diagnostics_title">Événements calendrier ↔ alarmes TClock</string>
     <string name="calendar_diagnostics_overview_meta">%1$s – %2$s · Vérifié à %3$s</string>
     <string name="calendar_diagnostics_sync_short">Synchroniser</string>
