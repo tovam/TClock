@@ -34,11 +34,17 @@ class DBHelper private constructor(
     private val COL_SOUND_URI = "sound_uri"
     private val COL_LABEL = "label"
     private val COL_ONE_SHOT = "one_shot"
+    private val COL_TRIGGER_AT_MILLIS = "trigger_at_millis"
+    private val COL_SOURCE = "source"
+    private val COL_CALENDAR_KEY = "calendar_key"
+    private val COL_CALENDAR_EVENT_ID = "calendar_event_id"
+    private val COL_CALENDAR_EVENT_START_MILLIS = "calendar_event_start_millis"
+    private val COL_CALENDAR_OFFSET_MINUTES = "calendar_offset_minutes"
 
     private val mDb = writableDatabase
 
     companion object {
-        private const val DB_VERSION = 2
+        private const val DB_VERSION = 3
         const val DB_NAME = "alarms.db"
 
         @SuppressLint("StaticFieldLeak")
@@ -56,14 +62,25 @@ class DBHelper private constructor(
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             "CREATE TABLE IF NOT EXISTS $ALARMS_TABLE_NAME ($COL_ID INTEGER PRIMARY KEY AUTOINCREMENT, $COL_TIME_IN_MINUTES INTEGER, $COL_DAYS INTEGER, " +
-                "$COL_IS_ENABLED INTEGER, $COL_VIBRATE INTEGER, $COL_SOUND_TITLE TEXT, $COL_SOUND_URI TEXT, $COL_LABEL TEXT, $COL_ONE_SHOT INTEGER)"
+                "$COL_IS_ENABLED INTEGER, $COL_VIBRATE INTEGER, $COL_SOUND_TITLE TEXT, $COL_SOUND_URI TEXT, $COL_LABEL TEXT, $COL_ONE_SHOT INTEGER, " +
+                "$COL_TRIGGER_AT_MILLIS INTEGER NOT NULL DEFAULT 0, $COL_SOURCE TEXT NOT NULL DEFAULT '${Alarm.SOURCE_MANUAL}', " +
+                "$COL_CALENDAR_KEY TEXT NOT NULL DEFAULT '', $COL_CALENDAR_EVENT_ID INTEGER NOT NULL DEFAULT 0, " +
+                "$COL_CALENDAR_EVENT_START_MILLIS INTEGER NOT NULL DEFAULT 0, $COL_CALENDAR_OFFSET_MINUTES INTEGER NOT NULL DEFAULT 0)"
         )
         insertInitialAlarms(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        if (oldVersion == 1 && newVersion > oldVersion) {
+        if (oldVersion < 2) {
             db.execSQL("ALTER TABLE $ALARMS_TABLE_NAME ADD COLUMN $COL_ONE_SHOT INTEGER NOT NULL DEFAULT 0")
+        }
+        if (oldVersion < 3) {
+            db.execSQL("ALTER TABLE $ALARMS_TABLE_NAME ADD COLUMN $COL_TRIGGER_AT_MILLIS INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE $ALARMS_TABLE_NAME ADD COLUMN $COL_SOURCE TEXT NOT NULL DEFAULT '${Alarm.SOURCE_MANUAL}'")
+            db.execSQL("ALTER TABLE $ALARMS_TABLE_NAME ADD COLUMN $COL_CALENDAR_KEY TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE $ALARMS_TABLE_NAME ADD COLUMN $COL_CALENDAR_EVENT_ID INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE $ALARMS_TABLE_NAME ADD COLUMN $COL_CALENDAR_EVENT_START_MILLIS INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE $ALARMS_TABLE_NAME ADD COLUMN $COL_CALENDAR_OFFSET_MINUTES INTEGER NOT NULL DEFAULT 0")
         }
     }
 
@@ -111,6 +128,8 @@ class DBHelper private constructor(
 
     fun getAlarmsWithUri(uri: String) = getAlarms().filter { it.soundUri == uri }
 
+    fun getCalendarAlarms() = getAlarms().filter { it.isCalendarAlarm() }
+
     private fun fillAlarmContentValues(alarm: Alarm): ContentValues {
         return ContentValues().apply {
             put(COL_TIME_IN_MINUTES, alarm.timeInMinutes)
@@ -121,6 +140,12 @@ class DBHelper private constructor(
             put(COL_SOUND_URI, alarm.soundUri)
             put(COL_LABEL, alarm.label)
             put(COL_ONE_SHOT, alarm.oneShot)
+            put(COL_TRIGGER_AT_MILLIS, alarm.triggerAtMillis)
+            put(COL_SOURCE, alarm.source)
+            put(COL_CALENDAR_KEY, alarm.calendarKey)
+            put(COL_CALENDAR_EVENT_ID, alarm.calendarEventId)
+            put(COL_CALENDAR_EVENT_START_MILLIS, alarm.calendarEventStartMillis)
+            put(COL_CALENDAR_OFFSET_MINUTES, alarm.calendarOffsetMinutes)
         }
     }
 
@@ -137,7 +162,13 @@ class DBHelper private constructor(
             COL_SOUND_TITLE,
             COL_SOUND_URI,
             COL_LABEL,
-            COL_ONE_SHOT
+            COL_ONE_SHOT,
+            COL_TRIGGER_AT_MILLIS,
+            COL_SOURCE,
+            COL_CALENDAR_KEY,
+            COL_CALENDAR_EVENT_ID,
+            COL_CALENDAR_EVENT_START_MILLIS,
+            COL_CALENDAR_OFFSET_MINUTES
         )
         var cursor: Cursor? = null
         try {
@@ -154,6 +185,13 @@ class DBHelper private constructor(
                         val soundUri = cursor.getStringValue(COL_SOUND_URI)
                         val label = cursor.getStringValue(COL_LABEL)
                         val oneShot = cursor.getIntValue(COL_ONE_SHOT) == 1
+                        val triggerAtMillis = cursor.getLong(cursor.getColumnIndexOrThrow(COL_TRIGGER_AT_MILLIS))
+                        val source = cursor.getStringValue(COL_SOURCE)
+                        val calendarKey = cursor.getStringValue(COL_CALENDAR_KEY)
+                        val calendarEventId = cursor.getLong(cursor.getColumnIndexOrThrow(COL_CALENDAR_EVENT_ID))
+                        val calendarEventStartMillis =
+                            cursor.getLong(cursor.getColumnIndexOrThrow(COL_CALENDAR_EVENT_START_MILLIS))
+                        val calendarOffsetMinutes = cursor.getIntValue(COL_CALENDAR_OFFSET_MINUTES)
 
                         val alarm = Alarm(
                             id = id,
@@ -164,7 +202,13 @@ class DBHelper private constructor(
                             soundTitle = soundTitle,
                             soundUri = soundUri,
                             label = label,
-                            oneShot = oneShot
+                            oneShot = oneShot,
+                            triggerAtMillis = triggerAtMillis,
+                            source = source,
+                            calendarKey = calendarKey,
+                            calendarEventId = calendarEventId,
+                            calendarEventStartMillis = calendarEventStartMillis,
+                            calendarOffsetMinutes = calendarOffsetMinutes
                         )
                         alarms.add(alarm)
                     } catch (e: Exception) {

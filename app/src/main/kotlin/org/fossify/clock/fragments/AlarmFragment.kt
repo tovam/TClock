@@ -1,12 +1,14 @@
 package org.fossify.clock.fragments
 
 import android.os.Bundle
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import org.fossify.clock.activities.MainActivity
 import org.fossify.clock.activities.SimpleActivity
+import org.fossify.clock.activities.ScheduledAlarmsActivity
 import org.fossify.clock.adapters.AlarmsAdapter
 import org.fossify.clock.databinding.FragmentAlarmBinding
 import org.fossify.clock.dialogs.ChangeAlarmSortDialog
@@ -149,7 +151,12 @@ class AlarmFragment : Fragment(), ToggleAlarmInterface {
                     toggleAlarmInterface = this,
                     recyclerView = binding.alarmsList
                 ) {
-                    openEditAlarm(it as Alarm)
+                    val alarm = it as Alarm
+                    if (alarm.isCalendarAlarm()) {
+                        startActivity(Intent(requireContext(), ScheduledAlarmsActivity::class.java))
+                    } else {
+                        openEditAlarm(alarm)
+                    }
                 }.apply {
                     binding.alarmsList.adapter = this
                 }

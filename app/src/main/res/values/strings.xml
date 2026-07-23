@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_launcher_name">Clock</string>
+    <string name="app_launcher_name">TCLOCK</string>
     <string name="time_zone">Time zone</string>
     <string name="vibrate">Vibrate</string>
     <string name="no_days_selected">No days selected</string>
@@ -36,6 +36,17 @@
     <string name="missed_alarm">Missed alarm</string>
     <string name="replaced_by_another_alarm">Replaced by another alarm</string>
     <string name="alarm_timed_out">Alarm timed out</string>
+    <string name="scheduled_alarms">Scheduled alarms</string>
+    <string name="no_scheduled_alarms">No alarm is currently scheduled</string>
+    <string name="calendar_permission_explanation">TCLOCK needs read-only calendar access to find TCLOCK markers in event descriptions.</string>
+    <string name="allow_calendar_access">Allow calendar access</string>
+    <string name="sync_calendar_now">Sync calendar now</string>
+    <string name="calendar_untitled_event">Untitled calendar event</string>
+    <string name="calendar_alarm_before">Calendar · %1$d min before event</string>
+    <string name="calendar_alarm_after">Calendar · %1$d min after event</string>
+    <string name="calendar_alarm_at_start">Calendar · at event start</string>
+    <string name="manual_alarm">Manual alarm</string>
+    <string name="unnamed_alarm">Unnamed alarm</string>
 
     <!-- Timer -->
     <string name="timers_notification_msg">Timers are running</string>

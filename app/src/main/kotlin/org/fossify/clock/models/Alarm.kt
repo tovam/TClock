@@ -16,12 +16,25 @@ data class Alarm(
     var soundUri: String,
     var label: String,
     var oneShot: Boolean = false,
+    var triggerAtMillis: Long = 0L,
+    var source: String = SOURCE_MANUAL,
+    var calendarKey: String = "",
+    var calendarEventId: Long = 0L,
+    var calendarEventStartMillis: Long = 0L,
+    var calendarOffsetMinutes: Int = 0,
 ) {
     fun isRecurring() = days > 0
 
     fun isToday() = days == TODAY_BIT
 
     fun isTomorrow() = days == TOMORROW_BIT
+
+    fun isCalendarAlarm() = source == SOURCE_CALENDAR
+
+    companion object {
+        const val SOURCE_MANUAL = "manual"
+        const val SOURCE_CALENDAR = "calendar"
+    }
 }
 
 @Keep

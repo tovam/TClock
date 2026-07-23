@@ -144,6 +144,10 @@ class Config(context: Context) : BaseConfig(context) {
             putString(LAST_DATA_EXPORT_PATH, lastDataExportPath)
         }
 
+    var calendarPermissionAsked: Boolean
+        get() = prefs.getBoolean(CALENDAR_PERMISSION_ASKED, false)
+        set(value) = prefs.edit { putBoolean(CALENDAR_PERMISSION_ASKED, value) }
+
     @Deprecated("Remove this method in future releases")
     var migrateFirstDayOfWeek: Boolean
         get() = prefs.getBoolean(MIGRATE_FIRST_DAY_OF_WEEK, true)

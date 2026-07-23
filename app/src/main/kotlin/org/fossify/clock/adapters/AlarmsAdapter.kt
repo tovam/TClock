@@ -30,6 +30,8 @@ import org.fossify.commons.interfaces.ItemTouchHelperContract
 import org.fossify.commons.interfaces.StartReorderDragListener
 import org.fossify.commons.views.MyRecyclerView
 import org.greenrobot.eventbus.EventBus
+import java.text.DateFormat
+import java.util.Date
 
 class AlarmsAdapter(
     activity: SimpleActivity,
@@ -69,7 +71,8 @@ class AlarmsAdapter(
 
     override fun getSelectableItemCount() = alarms.size
 
-    override fun getIsItemSelectable(position: Int) = true
+    override fun getIsItemSelectable(position: Int) =
+        alarms.getOrNull(position)?.isCalendarAlarm() == false
 
     override fun getItemSelectionKey(position: Int) = alarms.getOrNull(position)?.id
 
@@ -159,9 +162,12 @@ class AlarmsAdapter(
             alarmLabel.beVisibleIf(alarm.label.isNotEmpty())
 
             alarmSwitch.isChecked = alarm.isEnabled
+            alarmSwitch.isEnabled = !alarm.isCalendarAlarm()
             alarmSwitch.setColors(textColor, properPrimaryColor, backgroundColor)
             alarmSwitch.setOnClickListener {
-                toggleAlarm(binding = this, alarm = alarm)
+                if (!alarm.isCalendarAlarm()) {
+                    toggleAlarm(binding = this, alarm = alarm)
+                }
             }
         }
     }
@@ -198,6 +204,11 @@ class AlarmsAdapter(
     private fun getAlarmSelectedDaysString(
         alarm: Alarm, isEnabled: Boolean = alarm.isEnabled,
     ): String {
+        if (alarm.isCalendarAlarm() && alarm.triggerAtMillis > 0L) {
+            return DateFormat.getDateInstance(DateFormat.MEDIUM).format(
+                Date(alarm.triggerAtMillis)
+            )
+        }
         if (alarm.isRecurring()) {
             return if (alarm.days == EVERY_DAY_BIT) {
                 activity.getString(org.fossify.commons.R.string.every_day)

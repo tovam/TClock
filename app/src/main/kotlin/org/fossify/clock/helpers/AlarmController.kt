@@ -3,6 +3,9 @@ package org.fossify.clock.helpers
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.Manifest
+import androidx.core.content.ContextCompat
 import org.fossify.clock.extensions.cancelAlarmClock
 import org.fossify.clock.extensions.dbHelper
 import org.fossify.clock.extensions.setupAlarmClock
@@ -33,8 +36,9 @@ class AlarmController(
      */
     fun rescheduleEnabledAlarms() {
         db.getEnabledAlarms().forEach {
-            // TODO: Skipped upcoming alarms are being *rescheduled* here.
-            if (!it.isToday() || it.timeInMinutes > getCurrentDayMinutes()) {
+            val isFutureAbsoluteAlarm =
+                it.triggerAtMillis == 0L || it.triggerAtMillis > System.currentTimeMillis()
+            if (isFutureAbsoluteAlarm && (!it.isToday() || it.timeInMinutes > getCurrentDayMinutes())) {
                 scheduleNextOccurrence(it, false)
             }
         }
@@ -100,9 +104,20 @@ class AlarmController(
      * @param alarmId The ID of the alarm that was triggered.
      */
     fun onAlarmTriggered(alarmId: Int) {
+        val alarm = db.getAlarmWithId(alarmId) ?: return
+        if (
+            alarm.isCalendarAlarm() &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            context.cancelAlarmClock(alarm)
+            db.deleteAlarms(arrayListOf(alarm))
+            notifyObservers()
+            return
+        }
+
         ensureBackgroundThread {
             // Reschedule the next occurrence right away
-            val alarm = db.getAlarmWithId(alarmId) ?: return@ensureBackgroundThread
             if (alarm.isRecurring()) {
                 scheduleNextOccurrence(alarm)
             }

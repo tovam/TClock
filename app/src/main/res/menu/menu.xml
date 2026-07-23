@@ -7,6 +7,10 @@
         android:title="@string/sort_by"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/scheduled_alarms"
+        android:title="@string/scheduled_alarms"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/settings"
         android:icon="@drawable/ic_settings_cog_vector"
         android:title="@string/settings"

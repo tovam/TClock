@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_launcher_name">Horloge</string>
+    <string name="app_launcher_name">TCLOCK</string>
     <string name="time_zone">Fuseau horaire</string>
     <string name="vibrate">Vibrer</string>
     <string name="no_days_selected">Aucun jour sélectionné</string>
@@ -54,4 +54,15 @@
     <string name="replaced_by_another_alarm">Remplacée par une autre alarme</string>
     <string name="missed_alarm">Alarme manquée</string>
     <string name="alarm_timed_out">Alarme expirée</string>
+    <string name="scheduled_alarms">Alarmes programmées</string>
+    <string name="no_scheduled_alarms">Aucune alarme n’est actuellement programmée</string>
+    <string name="calendar_permission_explanation">TCLOCK a besoin d’un accès en lecture seule au calendrier pour trouver les marqueurs TCLOCK dans la description des événements.</string>
+    <string name="allow_calendar_access">Autoriser l’accès au calendrier</string>
+    <string name="sync_calendar_now">Synchroniser le calendrier</string>
+    <string name="calendar_untitled_event">Événement sans titre</string>
+    <string name="calendar_alarm_before">Calendrier · %1$d min avant l’événement</string>
+    <string name="calendar_alarm_after">Calendrier · %1$d min après l’événement</string>
+    <string name="calendar_alarm_at_start">Calendrier · au début de l’événement</string>
+    <string name="manual_alarm">Alarme manuelle</string>
+    <string name="unnamed_alarm">Alarme sans nom</string>
 </resources>

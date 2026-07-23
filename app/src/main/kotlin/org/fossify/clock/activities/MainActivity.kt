@@ -1,5 +1,6 @@
 package org.fossify.clock.activities
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.ShortcutInfo
@@ -7,6 +8,7 @@ import android.graphics.drawable.Icon
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.view.WindowManager
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.graphics.drawable.toDrawable
 import me.grantland.widget.AutofitHelper
 import org.fossify.clock.BuildConfig
@@ -19,6 +21,8 @@ import org.fossify.clock.extensions.getEnabledAlarms
 import org.fossify.clock.extensions.handleFullScreenNotificationsPermission
 import org.fossify.clock.extensions.updateWidgets
 import org.fossify.clock.helpers.INVALID_TIMER_ID
+import org.fossify.clock.helpers.CalendarAlarmSync
+import org.fossify.clock.helpers.CalendarSyncScheduler
 import org.fossify.clock.helpers.OPEN_TAB
 import org.fossify.clock.helpers.PICK_AUDIO_FILE_INTENT_ID
 import org.fossify.clock.helpers.STOPWATCH_SHORTCUT_ID
@@ -63,6 +67,13 @@ class MainActivity : SimpleActivity() {
     private var storedBackgroundColor = 0
     private var storedPrimaryColor = 0
     private val binding: ActivityMainBinding by viewBinding(ActivityMainBinding::inflate)
+    private val calendarPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            config.calendarPermissionAsked = true
+            if (granted) {
+                startCalendarSync()
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,6 +89,7 @@ class MainActivity : SimpleActivity() {
         setupTabs()
         updateWidgets()
         migrateFirstDayOfWeek()
+        initializeCalendarSync()
         ensureBackgroundThread {
             alarmController.rescheduleEnabledAlarms()
         }
@@ -178,6 +190,9 @@ class MainActivity : SimpleActivity() {
                 }
 
                 R.id.more_apps_from_us -> launchMoreAppsFromUsIntent()
+                R.id.scheduled_alarms -> startActivity(
+                    Intent(this, ScheduledAlarmsActivity::class.java)
+                )
                 R.id.settings -> launchSettings()
                 R.id.about -> launchAbout()
                 else -> return@setOnMenuItemClickListener false
@@ -350,6 +365,22 @@ class MainActivity : SimpleActivity() {
 
     private fun launchSettings() {
         startActivity(Intent(applicationContext, SettingsActivity::class.java))
+    }
+
+    private fun initializeCalendarSync() {
+        if (CalendarAlarmSync.hasCalendarPermission(this)) {
+            startCalendarSync()
+        } else if (!config.calendarPermissionAsked) {
+            config.calendarPermissionAsked = true
+            calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+        }
+    }
+
+    private fun startCalendarSync() {
+        CalendarSyncScheduler.schedule(this)
+        ensureBackgroundThread {
+            CalendarAlarmSync.sync(this)
+        }
     }
 
     private fun launchAbout() {

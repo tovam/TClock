@@ -15,6 +15,7 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
 
     <uses-permission
         android:name="android.permission.ACCESS_NETWORK_STATE"
@@ -101,6 +102,13 @@
         </activity>
 
         <activity
+            android:name=".activities.ScheduledAlarmsActivity"
+            android:configChanges="orientation"
+            android:exported="false"
+            android:label="@string/scheduled_alarms"
+            android:parentActivityName=".activities.MainActivity" />
+
+        <activity
             android:name="org.fossify.commons.activities.AboutActivity"
             android:configChanges="orientation"
             android:exported="false"
@@ -165,6 +173,11 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Used to notify the user that stopwatch is running" />
         </service>
+
+        <service
+            android:name=".services.CalendarSyncJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <receiver android:name=".receivers.AlarmReceiver" />
 

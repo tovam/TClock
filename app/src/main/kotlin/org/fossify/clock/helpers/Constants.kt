@@ -15,7 +15,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.TimeZone
 
-const val REPOSITORY_NAME = "Clock"
+const val REPOSITORY_NAME = "TClock"
 
 // shared preferences
 const val SELECTED_TIME_ZONES = "selected_time_zones"
@@ -41,6 +41,7 @@ const val WAS_INITIAL_WIDGET_SET_UP = "was_initial_widget_set_up"
 const val DATA_EXPORT_EXTENSION = ".json"
 const val LAST_DATA_EXPORT_PATH = "last_alarms_export_path"
 const val MIGRATE_FIRST_DAY_OF_WEEK = "migrate_first_day_of_week"
+const val CALENDAR_PERMISSION_ASKED = "calendar_permission_asked"
 
 const val TABS_COUNT = 4
 const val EDITED_TIME_ZONE_SEPARATOR = ":"
@@ -274,6 +275,11 @@ fun getAllTimeZones() = arrayListOf(
 )
 
 fun getTimeOfNextAlarm(alarm: Alarm): Calendar? {
+    if (alarm.triggerAtMillis > 0L) {
+        return Calendar.getInstance().apply {
+            timeInMillis = alarm.triggerAtMillis
+        }
+    }
     return getTimeOfNextAlarm(alarm.timeInMinutes, alarm.days)
 }
 
