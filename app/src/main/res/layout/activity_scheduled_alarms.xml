@@ -57,6 +57,15 @@
             android:visibility="gone" />
 
         <org.fossify.commons.views.MyTextView
+            android:id="@+id/scheduled_alarms_sync_error"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="@dimen/normal_margin"
+            android:text="@string/calendar_sync_failed"
+            android:visibility="gone" />
+
+        <org.fossify.commons.views.MyTextView
             android:id="@+id/scheduled_alarms_placeholder"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

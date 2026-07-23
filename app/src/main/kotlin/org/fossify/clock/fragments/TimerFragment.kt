@@ -122,14 +122,15 @@ class TimerFragment : Fragment() {
                         timers.sortedBy { it.id }
                     } else {
                         val customTimersSortOrder =
-                            customTimersSortOrderString?.split(", ")?.map { it.toInt() }!!
+                            customTimersSortOrderString
+                                ?.split(", ")
+                                ?.mapNotNull(String::toIntOrNull)
+                                .orEmpty()
                         val timersIdValueMap = timers.associateBy { it.id }
 
                         val sortedTimers: ArrayList<Timer> = ArrayList()
-                        customTimersSortOrder.map { id ->
-                            if (timersIdValueMap[id] != null) {
-                                sortedTimers.add(timersIdValueMap[id] as Timer)
-                            }
+                        customTimersSortOrder.forEach { id ->
+                            timersIdValueMap[id]?.let(sortedTimers::add)
                         }
 
                         ArrayList(sortedTimers + timers.filter { it !in sortedTimers })

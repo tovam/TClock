@@ -2,7 +2,7 @@ package org.fossify.clock.helpers
 
 object TClockPatternParser {
     private val pattern = Regex(
-        pattern = """(?i)\bTCLOCK\s*:\s*\{?\s*([+-]?)\s*(\d{1,6})\s*(minutes?|mins?|min|m|heures?|hours?|hrs?|h|jours?|days?|d|j)?\s*\}?"""
+        pattern = """(?i)\bTCLOCK\s*:\s*\{?\s*([+-]?)\s*(\d{1,6})\s*(minutes?|mins?|min|m|heures?|hours?|hrs?|h|jours?|days?|d|j)?\s*\}?(?![\p{L}\p{N}_])"""
     )
 
     /**

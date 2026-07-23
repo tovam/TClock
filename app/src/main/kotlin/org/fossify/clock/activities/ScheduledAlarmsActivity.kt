@@ -30,10 +30,8 @@ class ScheduledAlarmsActivity : SimpleActivity() {
             config.calendarPermissionAsked = true
             if (granted) {
                 CalendarSyncScheduler.schedule(this)
-                refresh(syncCalendar = true)
-            } else {
-                refresh(syncCalendar = false)
             }
+            refresh()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,7 +46,7 @@ class ScheduledAlarmsActivity : SimpleActivity() {
         }
         binding.scheduledAlarmsRefresh.setOnClickListener {
             if (CalendarAlarmSync.hasCalendarPermission(this)) {
-                refresh(syncCalendar = true)
+                refresh()
             } else {
                 calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
             }
@@ -60,11 +58,12 @@ class ScheduledAlarmsActivity : SimpleActivity() {
         setupTopAppBar(binding.scheduledAlarmsAppbar, NavigationIcon.Arrow)
         binding.root.setBackgroundColor(getProperBackgroundColor())
         updateTextColors(binding.scheduledAlarmsHolder)
-        refresh(syncCalendar = CalendarAlarmSync.hasCalendarPermission(this))
+        refresh()
     }
 
-    private fun refresh(syncCalendar: Boolean) {
-        binding.scheduledAlarmsProgress.beVisibleIf(syncCalendar)
+    private fun refresh() {
+        binding.scheduledAlarmsProgress.beVisibleIf(true)
+        binding.scheduledAlarmsSyncError.beVisibleIf(false)
         binding.scheduledAlarmsPermissionMessage.beVisibleIf(
             !CalendarAlarmSync.hasCalendarPermission(this)
         )
@@ -73,8 +72,8 @@ class ScheduledAlarmsActivity : SimpleActivity() {
         )
 
         ensureBackgroundThread {
-            if (syncCalendar) {
-                CalendarAlarmSync.sync(this)
+            val syncResult = CalendarAlarmSync.sync(this)
+            if (!syncResult.permissionMissing) {
                 CalendarSyncScheduler.schedule(this)
             }
             val now = System.currentTimeMillis()
@@ -89,6 +88,7 @@ class ScheduledAlarmsActivity : SimpleActivity() {
 
             runOnUiThread {
                 binding.scheduledAlarmsProgress.beVisibleIf(false)
+                binding.scheduledAlarmsSyncError.beVisibleIf(syncResult.failed)
                 binding.scheduledAlarmsPlaceholder.beVisibleIf(items.isEmpty())
                 adapter.updateItems(items)
             }

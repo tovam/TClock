@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.CalendarContract
+import android.util.Log
 import androidx.core.content.ContextCompat
 import org.fossify.clock.R
 import org.fossify.clock.extensions.cancelAlarmClock
@@ -18,7 +19,7 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 object CalendarAlarmSync {
-    const val WINDOW_DAYS = 15L
+    const val WINDOW_DAYS = CalendarAlarmWindow.WINDOW_DAYS
 
     private val lock = Any()
 
@@ -28,6 +29,7 @@ object CalendarAlarmSync {
         val removed: Int = 0,
         val total: Int = 0,
         val permissionMissing: Boolean = false,
+        val failed: Boolean = false,
     )
 
     private data class Candidate(
@@ -44,16 +46,45 @@ object CalendarAlarmSync {
             PackageManager.PERMISSION_GRANTED
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun sync(context: Context): Result = synchronized(lock) {
         if (!hasCalendarPermission(context)) {
-            return@synchronized Result(permissionMissing = true)
+            CalendarSyncScheduler.cancel(context)
+            val removed = removeCalendarAlarms(context)
+            return@synchronized Result(
+                removed = removed,
+                permissionMissing = true
+            )
         }
 
         val now = System.currentTimeMillis()
-        val windowEnd = now + TimeUnit.DAYS.toMillis(WINDOW_DAYS)
-        val candidates = readCandidates(context, now, windowEnd)
+        val window = CalendarAlarmWindow.rangeAt(now)
         val db = context.dbHelper
-        val existingByKey = db.getCalendarAlarms().associateBy { it.calendarKey }.toMutableMap()
+        val existingAlarms = db.getCalendarAlarms()
+        val candidates = try {
+            readCandidates(
+                context = context,
+                queryBeginMillis = window.queryBeginMillis,
+                queryEndMillis = window.queryEndMillis,
+                triggerBeginMillis = window.triggerBeginMillis,
+                triggerEndMillis = window.triggerEndMillis
+            )
+        } catch (exception: SecurityException) {
+            Log.e(TAG, "Calendar permission was lost during synchronization", exception)
+            if (!hasCalendarPermission(context)) {
+                CalendarSyncScheduler.cancel(context)
+                val removed = removeCalendarAlarms(context, existingAlarms)
+                return@synchronized Result(
+                    removed = removed,
+                    permissionMissing = true
+                )
+            }
+            return@synchronized Result(total = existingAlarms.size, failed = true)
+        } catch (exception: Exception) {
+            Log.e(TAG, "Calendar synchronization failed", exception)
+            return@synchronized Result(total = existingAlarms.size, failed = true)
+        }
+        val existingByKey = existingAlarms.associateBy { it.calendarKey }.toMutableMap()
         var created = 0
         var updated = 0
         var removed = 0
@@ -85,30 +116,36 @@ object CalendarAlarmSync {
                     created++
                 }
             } else if (existing.needsUpdate(candidate)) {
-                context.cancelAlarmClock(existing)
-                existing.apply {
-                    val calendar = Calendar.getInstance().apply {
-                        timeInMillis = candidate.triggerAtMillis
-                    }
-                    timeInMinutes = calendar.get(Calendar.HOUR_OF_DAY) * 60 +
-                        calendar.get(Calendar.MINUTE)
-                    isEnabled = true
-                    triggerAtMillis = candidate.triggerAtMillis
-                    calendarEventId = candidate.eventId
-                    calendarEventStartMillis = candidate.eventStartMillis
-                    calendarOffsetMinutes = candidate.offsetMinutes
-                    label = candidate.label
+                val calendar = Calendar.getInstance().apply {
+                    timeInMillis = candidate.triggerAtMillis
                 }
-                if (db.updateAlarm(existing)) {
-                    context.setupAlarmClock(existing, existing.triggerAtMillis)
+                val updatedAlarm = existing.copy(
+                    timeInMinutes = calendar.get(Calendar.HOUR_OF_DAY) * 60 +
+                        calendar.get(Calendar.MINUTE),
+                    days = 0,
+                    isEnabled = true,
+                    oneShot = true,
+                    triggerAtMillis = candidate.triggerAtMillis,
+                    calendarKey = candidate.key,
+                    calendarEventId = candidate.eventId,
+                    calendarEventStartMillis = candidate.eventStartMillis,
+                    calendarOffsetMinutes = candidate.offsetMinutes,
+                    label = candidate.label
+                )
+                if (db.updateAlarm(updatedAlarm)) {
+                    context.cancelAlarmClock(existing)
+                    context.setupAlarmClock(updatedAlarm, updatedAlarm.triggerAtMillis)
                     updated++
                 }
             }
         }
 
-        existingByKey.values.forEach { staleAlarm ->
-            db.deleteAlarms(arrayListOf(staleAlarm))
-            removed++
+        val staleAlarms = existingByKey.values.filter { alarm ->
+            CalendarAlarmWindow.shouldRemoveStaleAlarm(alarm.triggerAtMillis, now)
+        }
+        if (staleAlarms.isNotEmpty()) {
+            db.deleteAlarms(ArrayList(staleAlarms))
+            removed = staleAlarms.size
         }
 
         context.updateWidgets()
@@ -121,18 +158,38 @@ object CalendarAlarmSync {
         )
     }
 
+    private fun removeCalendarAlarms(
+        context: Context,
+        alarms: List<Alarm> = context.dbHelper.getCalendarAlarms(),
+    ): Int {
+        if (alarms.isEmpty()) {
+            return 0
+        }
+
+        context.dbHelper.deleteAlarms(ArrayList(alarms))
+        context.updateWidgets()
+        EventBus.getDefault().post(AlarmEvent.Refresh)
+        return alarms.size
+    }
+
     private fun Alarm.needsUpdate(candidate: Candidate): Boolean {
         return triggerAtMillis != candidate.triggerAtMillis ||
+            calendarKey != candidate.key ||
+            calendarEventId != candidate.eventId ||
             calendarEventStartMillis != candidate.eventStartMillis ||
             calendarOffsetMinutes != candidate.offsetMinutes ||
             label != candidate.label ||
+            days != 0 ||
+            !oneShot ||
             !isEnabled
     }
 
     private fun readCandidates(
         context: Context,
-        beginMillis: Long,
-        endMillis: Long,
+        queryBeginMillis: Long,
+        queryEndMillis: Long,
+        triggerBeginMillis: Long,
+        triggerEndMillis: Long,
     ): Map<String, Candidate> {
         val result = LinkedHashMap<String, Candidate>()
         val projection = arrayOf(
@@ -144,12 +201,14 @@ object CalendarAlarmSync {
             CalendarContract.Events.STATUS
         )
 
-        CalendarContract.Instances.query(
+        val cursor = CalendarContract.Instances.query(
             context.contentResolver,
             projection,
-            beginMillis,
-            endMillis
-        )?.use { cursor ->
+            queryBeginMillis,
+            queryEndMillis
+        ) ?: throw IllegalStateException("Calendar provider returned no cursor")
+
+        cursor.use {
             val eventIdIndex = cursor.getColumnIndexOrThrow(CalendarContract.Instances.EVENT_ID)
             val beginIndex = cursor.getColumnIndexOrThrow(CalendarContract.Instances.BEGIN)
             val titleIndex = cursor.getColumnIndexOrThrow(CalendarContract.Events.TITLE)
@@ -187,9 +246,12 @@ object CalendarAlarmSync {
                 }
 
                 offsets.forEach { offsetMinutes ->
+                    if (!CalendarAlarmWindow.supportsOffset(offsetMinutes)) {
+                        return@forEach
+                    }
                     val triggerAtMillis =
                         eventStartMillis + TimeUnit.MINUTES.toMillis(offsetMinutes.toLong())
-                    if (triggerAtMillis in (beginMillis + 1)..endMillis) {
+                    if (triggerAtMillis in (triggerBeginMillis + 1)..triggerEndMillis) {
                         val key = "$eventId:$eventStartMillis:$offsetMinutes"
                         result[key] = Candidate(
                             key = key,
@@ -205,4 +267,6 @@ object CalendarAlarmSync {
         }
         return result
     }
+
+    private const val TAG = "CalendarAlarmSync"
 }

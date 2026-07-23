@@ -15,6 +15,8 @@ androidx-preference = "1.2.1"
 autofittextview = "0.2.1"
 #Eventbus
 eventbus = "3.3.1"
+# Testing
+junit = "4.13.2"
 #KotlinX
 kotlinx-coroutines = "1.11.0"
 #NumberPicker
@@ -43,6 +45,8 @@ androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", 
 autofittextview = { module = "me.grantland:autofittextview", version.ref = "autofittextview" }
 #EventBus
 eventbus = { module = "org.greenrobot:eventbus", version.ref = "eventbus" }
+# Testing
+junit = { module = "junit:junit", version.ref = "junit" }
 #KotlinX
 #Kotlin
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }

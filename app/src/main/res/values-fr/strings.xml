@@ -59,6 +59,7 @@
     <string name="calendar_permission_explanation">TCLOCK a besoin d’un accès en lecture seule au calendrier pour trouver les marqueurs TCLOCK dans la description des événements.</string>
     <string name="allow_calendar_access">Autoriser l’accès au calendrier</string>
     <string name="sync_calendar_now">Synchroniser le calendrier</string>
+    <string name="calendar_sync_failed">La synchronisation du calendrier a échoué. Les alarmes existantes ont été conservées.</string>
     <string name="calendar_untitled_event">Événement sans titre</string>
     <string name="calendar_alarm_before">Calendrier · %1$d min avant l’événement</string>
     <string name="calendar_alarm_after">Calendrier · %1$d min après l’événement</string>

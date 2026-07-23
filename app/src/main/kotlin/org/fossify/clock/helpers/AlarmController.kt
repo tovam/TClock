@@ -35,11 +35,14 @@ class AlarmController(
      * and potentially upcoming alarms for today depending on the logic in `scheduleNextOccurrence`.
      */
     fun rescheduleEnabledAlarms() {
-        db.getEnabledAlarms().forEach {
-            val isFutureAbsoluteAlarm =
-                it.triggerAtMillis == 0L || it.triggerAtMillis > System.currentTimeMillis()
-            if (isFutureAbsoluteAlarm && (!it.isToday() || it.timeInMinutes > getCurrentDayMinutes())) {
-                scheduleNextOccurrence(it, false)
+        val now = System.currentTimeMillis()
+        db.getEnabledAlarms().forEach { alarm ->
+            if (alarm.triggerAtMillis > 0L) {
+                if (alarm.triggerAtMillis > now) {
+                    scheduleNextOccurrence(alarm, false)
+                }
+            } else if (!alarm.isToday() || alarm.timeInMinutes > getCurrentDayMinutes()) {
+                scheduleNextOccurrence(alarm, false)
             }
         }
     }

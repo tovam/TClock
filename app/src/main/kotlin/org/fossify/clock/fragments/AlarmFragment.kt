@@ -116,15 +116,16 @@ class AlarmFragment : Fragment(), ToggleAlarmInterface {
                     if (customAlarmsSortOrderString == "") {
                         newAlarms.sortBy { it.id }
                     } else {
-                        val customAlarmsSortOrder: List<Int> =
-                            customAlarmsSortOrderString?.split(", ")?.map { it.toInt() }!!
+                        val customAlarmsSortOrder =
+                            customAlarmsSortOrderString
+                                ?.split(", ")
+                                ?.mapNotNull(String::toIntOrNull)
+                                .orEmpty()
                         val alarmsIdValueMap = newAlarms.associateBy { it.id }
 
                         val sortedAlarms: ArrayList<Alarm> = ArrayList()
-                        customAlarmsSortOrder.map { id ->
-                            if (alarmsIdValueMap[id] != null) {
-                                sortedAlarms.add(alarmsIdValueMap[id] as Alarm)
-                            }
+                        customAlarmsSortOrder.forEach { id ->
+                            alarmsIdValueMap[id]?.let(sortedAlarms::add)
                         }
 
                         newAlarms = ArrayList(
@@ -152,11 +153,14 @@ class AlarmFragment : Fragment(), ToggleAlarmInterface {
                     toggleAlarmInterface = this,
                     recyclerView = binding.alarmsList
                 ) {
-                    val alarm = it as Alarm
-                    if (alarm.isCalendarAlarm()) {
-                        startActivity(Intent(requireContext(), ScheduledAlarmsActivity::class.java))
-                    } else {
-                        openEditAlarm(alarm)
+                    if (it is Alarm) {
+                        if (it.isCalendarAlarm()) {
+                            startActivity(
+                                Intent(requireContext(), ScheduledAlarmsActivity::class.java)
+                            )
+                        } else {
+                            openEditAlarm(it)
+                        }
                     }
                 }.apply {
                     binding.alarmsList.adapter = this

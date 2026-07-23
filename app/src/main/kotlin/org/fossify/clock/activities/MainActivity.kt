@@ -370,9 +370,15 @@ class MainActivity : SimpleActivity() {
     private fun initializeCalendarSync() {
         if (CalendarAlarmSync.hasCalendarPermission(this)) {
             startCalendarSync()
-        } else if (!config.calendarPermissionAsked) {
-            config.calendarPermissionAsked = true
-            calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+        } else {
+            CalendarSyncScheduler.cancel(this)
+            ensureBackgroundThread {
+                CalendarAlarmSync.sync(this)
+            }
+            if (!config.calendarPermissionAsked) {
+                config.calendarPermissionAsked = true
+                calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+            }
         }
     }
 

@@ -15,6 +15,7 @@ object CalendarSyncScheduler {
 
     fun schedule(context: Context) {
         if (!CalendarAlarmSync.hasCalendarPermission(context)) {
+            cancel(context)
             return
         }
         val scheduler = context.getSystemService(JobScheduler::class.java)
@@ -48,6 +49,14 @@ object CalendarSyncScheduler {
             .setTriggerContentMaxDelay(10_000L)
             .build()
         context.getSystemService(JobScheduler::class.java).schedule(job)
+    }
+
+    fun cancel(context: Context) {
+        context.getSystemService(JobScheduler::class.java).apply {
+            cancel(CONTENT_JOB_A)
+            cancel(CONTENT_JOB_B)
+            cancel(PERIODIC_JOB)
+        }
     }
 
     fun nextContentJobId(currentJobId: Int): Int {

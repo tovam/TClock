@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: tclock-latest-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build signed APK
@@ -27,6 +31,12 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Reject unsafe collection casts
+        run: |
+          if grep -R -n -E 'as[[:space:]]+ArrayList|toList\(\)[[:space:]]+as' app/src/main/kotlin; then
+            exit 1
+          fi
+
       - name: Restore signing key
         env:
           TCLOCK_KEYSTORE_BASE64: ${{ secrets.TCLOCK_KEYSTORE_BASE64 }}
@@ -41,14 +51,19 @@ jobs:
           SIGNING_STORE_FILE: ${{ runner.temp }}/tclock-signing.p12
           SIGNING_STORE_PASSWORD: ${{ secrets.TCLOCK_STORE_PASSWORD }}
         run: |
-          ./gradlew testFossDebugUnitTest assembleFossRelease \
+          ./gradlew detekt lintFossRelease testFossDebugUnitTest assembleFossRelease \
             -PVERSION_CODE=${{ github.run_number }} \
             -PVERSION_NAME=1.0.${{ github.run_number }} \
             --no-daemon
 
       - name: Prepare public APK
         run: |
-          cp app/build/outputs/apk/foss/release/*.apk "$RUNNER_TEMP/TCLOCK-latest.apk"
+          APK_PATH="$(find app/build/outputs/apk/foss/release -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          test -n "$APK_PATH"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner -print | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "$APK_PATH"
+          cp "$APK_PATH" "$RUNNER_TEMP/TCLOCK-latest.apk"
 
       - name: Publish public latest release
         env:

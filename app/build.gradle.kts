@@ -151,6 +151,7 @@ dependencies {
     implementation(libs.autofittextview)
     implementation(libs.eventbus)
     implementation(libs.kotlinx.serialization.json)
+    testImplementation(libs.junit)
 
     implementation(libs.bundles.room)
     ksp(libs.androidx.room.compiler)
