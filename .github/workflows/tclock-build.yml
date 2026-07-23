@@ -44,14 +44,23 @@ jobs:
           test -n "$TCLOCK_KEYSTORE_BASE64"
           printf '%s' "$TCLOCK_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/tclock-signing.p12"
 
-      - name: Build and test signed APK
+      - name: Run unit tests
+        run: ./gradlew testFossDebugUnitTest --no-daemon
+
+      - name: Run Detekt
+        run: ./gradlew detekt --no-daemon
+
+      - name: Run Android lint
+        run: ./gradlew lintFossRelease --no-daemon
+
+      - name: Build signed APK
         env:
           SIGNING_KEY_ALIAS: ${{ secrets.TCLOCK_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.TCLOCK_KEY_PASSWORD }}
           SIGNING_STORE_FILE: ${{ runner.temp }}/tclock-signing.p12
           SIGNING_STORE_PASSWORD: ${{ secrets.TCLOCK_STORE_PASSWORD }}
         run: |
-          ./gradlew detekt lintFossRelease testFossDebugUnitTest assembleFossRelease \
+          ./gradlew assembleFossRelease \
             -PVERSION_CODE=${{ github.run_number }} \
             -PVERSION_NAME=1.0.${{ github.run_number }} \
             --no-daemon
