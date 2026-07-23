@@ -80,7 +80,7 @@
     <string name="calendar_diagnostics_description">Full description</string>
     <string name="calendar_diagnostics_markers_and_alarms">Markers and TClock alarm records</string>
     <string name="calendar_diagnostics_marker_none">No tclock marker</string>
-    <string name="calendar_diagnostics_marker_invalid">Contains “tclock” but no valid tclock:{delay} marker (minutes: m/min/mins/minute(s); hours: h/hr(s)/hour(s)/heure(s); days: d/day(s)/j/jour(s))</string>
+    <string name="calendar_diagnostics_marker_invalid">Contains “tclock” but no valid marker such as tclock:-30min (minutes: m/min/mins/minute(s); hours: h/hr(s)/hour(s)/heure(s); days: d/day(s)/j/jour(s))</string>
     <string name="calendar_diagnostics_marker_valid">%1$d valid tclock marker(s)</string>
     <string name="calendar_diagnostics_in_window">In the 15-day event window</string>
     <string name="calendar_diagnostics_outside_window">Outside the 15-day event window</string>

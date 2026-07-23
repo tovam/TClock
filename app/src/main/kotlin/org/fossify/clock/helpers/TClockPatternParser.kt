@@ -2,7 +2,7 @@ package org.fossify.clock.helpers
 
 object TClockPatternParser {
     private val pattern = Regex(
-        pattern = """(?<![\p{L}\p{N}_])tclock:\{([+-]?)([0-9]+)(minutes?|mins?|min|m|heures?|hours?|hrs?|h|jours?|days?|d|j)\}(?![\p{L}\p{N}_}])""",
+        pattern = """(?<![\p{L}\p{N}_])tclock:([+-]?)([0-9]+)(minutes?|mins?|min|m|heures?|hours?|hrs?|h|jours?|days?|d|j)(?![\p{L}\p{N}_{}])""",
         option = RegexOption.IGNORE_CASE
     )
 
