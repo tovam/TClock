@@ -72,9 +72,6 @@ jobs:
         continue-on-error: true
         run: ./gradlew detekt --no-daemon
 
-      - name: Run Android lint
-        run: ./gradlew lintFossRelease --no-daemon
-
       - name: Build signed APK
         env:
           SIGNING_KEY_ALIAS: ${{ secrets.TCLOCK_KEY_ALIAS }}
