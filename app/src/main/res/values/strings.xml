@@ -166,7 +166,7 @@
         <item quantity="other">%1$d events</item>
     </plurals>
     <plurals name="calendar_diagnostics_event_missing_issue">
-        <item quantity="one">The alarm still exists, but its calendar event may have been deleted, moved, or may no longer be synchronized.</item>
+        <item quantity="one">%1$d alarm still exists, but its calendar event may have been deleted, moved, or may no longer be synchronized.</item>
         <item quantity="other">%1$d alarms still exist, but their calendar events may have been deleted, moved, or may no longer be synchronized.</item>
     </plurals>
     <plurals name="calendar_diagnostics_marker_missing_issue">

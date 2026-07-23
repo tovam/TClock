@@ -184,7 +184,7 @@
         <item quantity="other">%1$d événements</item>
     </plurals>
     <plurals name="calendar_diagnostics_event_missing_issue">
-        <item quantity="one">L’alarme existe encore, mais son événement calendrier a peut-être été supprimé, déplacé ou n’est plus synchronisé.</item>
+        <item quantity="one">%1$d alarme existe encore, mais son événement calendrier a peut-être été supprimé, déplacé ou n’est plus synchronisé.</item>
         <item quantity="other">%1$d alarmes existent encore, mais leurs événements calendrier ont peut-être été supprimés, déplacés ou ne sont plus synchronisés.</item>
     </plurals>
     <plurals name="calendar_diagnostics_marker_missing_issue">
