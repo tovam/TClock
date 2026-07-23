@@ -127,8 +127,9 @@ class AlarmFragment : Fragment(), ToggleAlarmInterface {
                             }
                         }
 
-                        newAlarms =
-                            (sortedAlarms + newAlarms.filter { it !in sortedAlarms }) as ArrayList<Alarm>
+                        newAlarms = ArrayList(
+                            sortedAlarms + newAlarms.filter { it !in sortedAlarms }
+                        )
                     }
                 }
             }

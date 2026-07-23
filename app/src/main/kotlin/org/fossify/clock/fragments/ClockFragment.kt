@@ -132,8 +132,10 @@ class ClockFragment : Fragment() {
         }
 
         val selectedTimeZoneIDs = selectedTimeZones.map { it.toInt() }
-        val timeZones = safeContext.getAllTimeZonesModified()
-            .filter { selectedTimeZoneIDs.contains(it.id) } as ArrayList<MyTimeZone>
+        val timeZones = ArrayList(
+            safeContext.getAllTimeZonesModified()
+                .filter { selectedTimeZoneIDs.contains(it.id) }
+        )
         val currAdapter = binding.timeZonesList.adapter
         if (currAdapter == null) {
             TimeZonesAdapter(safeContext, timeZones, binding.timeZonesList) {

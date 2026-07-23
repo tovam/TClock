@@ -132,7 +132,7 @@ class TimerFragment : Fragment() {
                             }
                         }
 
-                        (sortedTimers + timers.filter { it !in sortedTimers }) as ArrayList<Timer>
+                        ArrayList(sortedTimers + timers.filter { it !in sortedTimers })
                     }
                 }
 

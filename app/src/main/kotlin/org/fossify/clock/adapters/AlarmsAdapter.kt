@@ -131,7 +131,7 @@ class AlarmsAdapter(
     }
 
     private fun getSelectedItems(): ArrayList<Alarm> {
-        return alarms.filter { selectedKeys.contains(it.id) } as ArrayList<Alarm>
+        return ArrayList(alarms.filter { selectedKeys.contains(it.id) })
     }
 
     @SuppressLint("ClickableViewAccessibility")
