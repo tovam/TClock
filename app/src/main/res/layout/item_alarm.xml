@@ -13,6 +13,21 @@
     android:paddingVertical="@dimen/medium_margin">
 
     <org.fossify.commons.views.MyTextView
+        android:id="@+id/alarm_section_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/normal_margin"
+        android:paddingBottom="@dimen/small_margin"
+        android:textSize="@dimen/big_text_size"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Calendar alarms (4)"
+        tools:visibility="visible" />
+
+    <org.fossify.commons.views.MyTextView
         android:id="@+id/alarm_time"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -23,7 +38,7 @@
         android:textSize="@dimen/alarm_text_size"
         app:layout_constraintEnd_toStartOf="@id/alarm_action_holder"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/alarm_section_title"
         tools:text="07:00" />
 
     <org.fossify.commons.views.MyTextView

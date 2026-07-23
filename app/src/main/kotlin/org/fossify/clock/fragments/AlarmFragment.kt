@@ -135,6 +135,15 @@ class AlarmFragment : Fragment(), ToggleAlarmInterface {
                 }
             }
 
+            val manualAlarms = newAlarms.filterNot { it.isCalendarAlarm() }
+            val calendarAlarms = newAlarms
+                .filter { it.isCalendarAlarm() }
+                .sortedWith(
+                    compareBy<Alarm> { it.triggerAtMillis }
+                        .thenBy { it.id }
+                )
+            newAlarms = ArrayList(manualAlarms + calendarAlarms)
+
             activity?.runOnUiThread {
                 callback(newAlarms)
             }

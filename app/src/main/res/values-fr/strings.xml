@@ -69,6 +69,8 @@
     <string name="remove_expired_alarm_confirmation">Arrêter et supprimer cette alarme calendrier ? Cela annule aussi toute sonnerie ou alarme reportée en cours.</string>
     <string name="calendar_alarm_expired_date">%1$s · déjà déclenchée</string>
     <string name="manual_alarm">Alarme manuelle</string>
+    <string name="manual_alarm_section">Alarmes normales (%1$d)</string>
+    <string name="calendar_alarm_section">Alarmes calendrier (%1$d)</string>
     <string name="unnamed_alarm">Alarme sans nom</string>
     <string name="calendar_diagnostics_title">Événements calendrier ↔ alarmes TClock</string>
     <string name="calendar_diagnostics_overview_meta">%1$s – %2$s · Vérifié à %3$s</string>

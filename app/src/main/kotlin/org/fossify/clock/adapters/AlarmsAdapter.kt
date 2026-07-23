@@ -70,7 +70,7 @@ class AlarmsAdapter(
         }
     }
 
-    override fun getSelectableItemCount() = alarms.size
+    override fun getSelectableItemCount() = alarms.count { !it.isCalendarAlarm() }
 
     override fun getIsItemSelectable(position: Int) =
         alarms.getOrNull(position)?.isCalendarAlarm() == false
@@ -89,7 +89,10 @@ class AlarmsAdapter(
         notifyDataSetChanged()
     }
 
-    override fun onRowClear(myViewHolder: ViewHolder?) {}
+    @SuppressLint("NotifyDataSetChanged")
+    override fun onRowClear(myViewHolder: ViewHolder?) {
+        notifyDataSetChanged()
+    }
 
     override fun onRowSelected(myViewHolder: ViewHolder?) {}
 
@@ -104,7 +107,7 @@ class AlarmsAdapter(
             allowSingleClick = true,
             allowLongClick = true
         ) { itemView, _ ->
-            setupView(itemView, alarm, holder)
+            setupView(itemView, alarm, holder, position)
         }
         bindViewHolder(holder)
     }
@@ -136,12 +139,40 @@ class AlarmsAdapter(
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupView(view: View, alarm: Alarm, holder: ViewHolder) {
+    private fun setupView(
+        view: View,
+        alarm: Alarm,
+        holder: ViewHolder,
+        position: Int,
+    ) {
         val isSelected = selectedKeys.contains(alarm.id)
         val isExpiredCalendarAlarm = alarm.isExpiredCalendarAlarm()
         ItemAlarmBinding.bind(view).apply {
             alarmHolder.isSelected = isSelected
-            alarmDragHandle.beVisibleIf(selectedKeys.isNotEmpty())
+            alarmSectionTitle.apply {
+                val previousAlarm = alarms.getOrNull(position - 1)
+                val startsSection =
+                    previousAlarm == null ||
+                        previousAlarm.isCalendarAlarm() != alarm.isCalendarAlarm()
+                beVisibleIf(startsSection)
+                if (startsSection) {
+                    val sectionCount = alarms.count {
+                        it.isCalendarAlarm() == alarm.isCalendarAlarm()
+                    }
+                    text = activity.getString(
+                        if (alarm.isCalendarAlarm()) {
+                            R.string.calendar_alarm_section
+                        } else {
+                            R.string.manual_alarm_section
+                        },
+                        sectionCount
+                    )
+                    setTextColor(properPrimaryColor)
+                }
+            }
+            alarmDragHandle.beVisibleIf(
+                selectedKeys.isNotEmpty() && !alarm.isCalendarAlarm()
+            )
             alarmDragHandle.applyColorFilter(textColor)
             alarmDragHandle.setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) {
@@ -254,6 +285,12 @@ class AlarmsAdapter(
     }
 
     override fun onRowMoved(fromPosition: Int, toPosition: Int) {
+        if (
+            alarms.getOrNull(fromPosition)?.isCalendarAlarm() != false ||
+            alarms.getOrNull(toPosition)?.isCalendarAlarm() != false
+        ) {
+            return
+        }
         alarms.move(fromPosition, toPosition)
         notifyItemMoved(fromPosition, toPosition)
         saveAlarmsCustomOrder(alarms)
@@ -263,7 +300,9 @@ class AlarmsAdapter(
     }
 
     private fun saveAlarmsCustomOrder(alarms: ArrayList<Alarm>) {
-        val alarmsCustomSortingIds = alarms.map { it.id }
+        val alarmsCustomSortingIds = alarms
+            .filterNot { it.isCalendarAlarm() }
+            .map { it.id }
 
         activity.config.alarmsCustomSorting = alarmsCustomSortingIds.joinToString { it.toString() }
     }

@@ -51,6 +51,8 @@
     <string name="remove_expired_alarm_confirmation">Stop and remove this calendar alarm? This also cancels any active ring or snooze.</string>
     <string name="calendar_alarm_expired_date">%1$s · already triggered</string>
     <string name="manual_alarm">Manual alarm</string>
+    <string name="manual_alarm_section">Manual alarms (%1$d)</string>
+    <string name="calendar_alarm_section">Calendar alarms (%1$d)</string>
     <string name="unnamed_alarm">Unnamed alarm</string>
     <string name="calendar_diagnostics_title">Calendar events ↔ TClock alarms</string>
     <string name="calendar_diagnostics_overview_meta">%1$s – %2$s · Checked at %3$s</string>
