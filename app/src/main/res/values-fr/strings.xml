@@ -68,20 +68,34 @@
     <string name="manual_alarm">Alarme manuelle</string>
     <string name="unnamed_alarm">Alarme sans nom</string>
     <string name="calendar_diagnostics_title">Événements calendrier ↔ alarmes TClock</string>
+    <string name="calendar_diagnostics_overview_meta">%1$s – %2$s · Vérifié à %3$s</string>
+    <string name="calendar_diagnostics_sync_short">Synchroniser</string>
+    <string name="calendar_diagnostics_allow_short">Autoriser</string>
+    <string name="calendar_diagnostics_events_unavailable">événements indisponibles</string>
+    <string name="calendar_diagnostics_permission_title">Accès au calendrier requis</string>
+    <string name="calendar_diagnostics_provider_error_title">Calendrier indisponible</string>
+    <string name="calendar_diagnostics_sync_error_title">Synchronisation incomplète</string>
+    <string name="calendar_diagnostics_attention_title">À vérifier</string>
+    <string name="calendar_diagnostics_event_missing_title">Événement calendrier introuvable</string>
+    <string name="calendar_diagnostics_sync_needed_title">Synchronisation nécessaire</string>
+    <string name="calendar_diagnostics_sync_needed_details">Certaines alarmes ne correspondent plus à leur événement. Synchronise pour les actualiser.</string>
+    <string name="calendar_diagnostics_invalid_pattern_title">Format TCLOCK invalide</string>
+    <string name="calendar_diagnostics_duplicate_title">Alarmes en double</string>
     <string name="calendar_diagnostics_permission_message">L’accès au calendrier n’est pas autorisé. Les événements ne peuvent pas être lus ; les éventuels enregistrements affichés ci-dessous proviennent de la base de données de TClock et n’ont pas pu être vérifiés.</string>
     <string name="calendar_diagnostics_provider_error">Le fournisseur de calendrier n’a pas pu être lu. Les enregistrements TClock existants sont affichés comme invérifiables et ne prouvent pas qu’une alarme Android est enregistrée.</string>
     <string name="calendar_diagnostics_sync_error">L’actualisation n’a pas pu mettre à jour les alarmes. Le diagnostic ci-dessous peut rester disponible, mais les enregistrements d’alarme TClock existants ont été conservés sans modification.</string>
     <string name="calendar_diagnostics_unexpected_error">Impossible de charger le diagnostic du calendrier. Réessayez d’actualiser.</string>
+    <string name="calendar_diagnostics_retry">Réessayer</string>
     <string name="calendar_diagnostics_window_summary">Fenêtre des alarmes : %1$s – %2$s</string>
     <string name="calendar_diagnostics_query_summary">Occurrences visibles analysées : %1$s – %2$s</string>
     <string name="calendar_diagnostics_counts_summary">%1$d événements dans la fenêtre · %2$d liés hors fenêtre · %3$d enregistrements d’alarme TClock</string>
     <string name="calendar_diagnostics_health_summary">Relations : %1$d exactes · %2$d divergentes · %3$d doublons · %4$d éligibles sans alarme · %5$d marqueurs supprimés · %6$d événements absents · %7$d motifs invalides · %8$d invérifiables</string>
     <string name="calendar_diagnostics_captured_summary">Lecture effectuée le %1$s</string>
     <string name="calendar_diagnostics_alarm_manager_note">Cet écran affiche les propres enregistrements de la base de données de TClock. Android ne fournit aucune API permettant d’énumérer les alarmes enregistrées dans AlarmManager ; TClock ne peut donc pas confirmer indépendamment le contenu du planificateur système.</string>
-    <string name="calendar_diagnostics_empty">Aucun événement de calendrier ne chevauche les 15 prochains jours et aucun enregistrement d’alarme TClock associé n’a été trouvé.</string>
-    <string name="calendar_diagnostics_planned_alarms_section">Alarmes prévues par TClock (%1$d)</string>
+    <string name="calendar_diagnostics_empty">Aucun événement calendrier dans les 15 prochains jours.</string>
+    <string name="calendar_diagnostics_planned_alarms_section">Alarmes prévues (%1$d)</string>
     <string name="calendar_diagnostics_planned_alarms_explanation">Enregistrements ponctuels actifs à venir, triés par heure de déclenchement.</string>
-    <string name="calendar_diagnostics_no_planned_alarms">Aucune alarme ponctuelle future active n’est actuellement enregistrée par TClock.</string>
+    <string name="calendar_diagnostics_no_planned_alarms">Aucune alarme prévue pour le moment.</string>
     <string name="calendar_diagnostics_compact_events_explanation">Événements affichés de façon compacte avec leur couleur, leur nom, leur date et leur nombre d’alarmes prévues.</string>
     <string name="calendar_diagnostics_window_events_section">Événements des 15 prochains jours (%1$d)</string>
     <string name="calendar_diagnostics_window_events_explanation">Tous les événements visibles sur cet appareil qui chevauchent la fenêtre glissante de 15 jours, y compris ceux qui ne contiennent aucun marqueur tclock.</string>
@@ -104,9 +118,9 @@
     <string name="calendar_diagnostics_outside_window">Hors de la fenêtre d’événements de 15 jours</string>
     <string name="calendar_diagnostics_all_day">Événement sur toute la journée</string>
     <string name="calendar_diagnostics_canceled">Événement annulé</string>
-    <string name="calendar_diagnostics_offset_before">%1$s avant l’événement</string>
-    <string name="calendar_diagnostics_offset_after">%1$s après l’événement</string>
-    <string name="calendar_diagnostics_offset_at_start">Au début de l’événement</string>
+    <string name="calendar_diagnostics_offset_before">%1$s avant</string>
+    <string name="calendar_diagnostics_offset_after">%1$s après</string>
+    <string name="calendar_diagnostics_offset_at_start">Au début</string>
     <string name="calendar_diagnostics_expected_trigger">Déclenchement attendu : %1$s</string>
     <string name="calendar_diagnostics_marker_key">Clé du marqueur : %1$s</string>
     <string name="calendar_diagnostics_linked_alarm_missing">Aucun enregistrement d’alarme TClock associé alors que ce marqueur est éligible</string>
@@ -132,13 +146,18 @@
     <string name="calendar_diagnostics_alarm_metadata">Événement nº %1$d · début %2$s · décalage %3$d min · jours %4$d</string>
     <string name="calendar_diagnostics_alarm_key">Clé enregistrée : %1$s</string>
     <string name="calendar_diagnostics_empty_key">(vide)</string>
-    <string name="calendar_diagnostics_event_starts">Événement : %1$s</string>
-    <string name="calendar_diagnostics_duplicate_short">Clé en double</string>
+    <string name="calendar_diagnostics_event_starts">événement %1$s</string>
+    <string name="calendar_diagnostics_duplicate_short">Alarme en double</string>
+    <string name="calendar_diagnostics_event_missing_alarm_warning">Événement calendrier introuvable</string>
+    <string name="calendar_diagnostics_marker_missing_alarm_warning">Marqueur TCLOCK retiré</string>
+    <string name="calendar_diagnostics_invalid_pattern_short">Format invalide · utilise TCLOCK:-60min</string>
+    <string name="calendar_diagnostics_alarm_missing_short">Alarme pas encore créée</string>
+    <string name="calendar_diagnostics_marker_removed_short">Marqueur TCLOCK retiré</string>
     <string name="calendar_diagnostics_link_exact">Correspondance exacte dans la base</string>
-    <string name="calendar_diagnostics_link_drift">Divergence de métadonnées</string>
+    <string name="calendar_diagnostics_link_drift">À resynchroniser</string>
     <string name="calendar_diagnostics_link_marker_missing">Marqueur absent</string>
     <string name="calendar_diagnostics_link_event_missing">Occurrence d’événement absente</string>
-    <string name="calendar_diagnostics_link_unverifiable">Invérifiable</string>
+    <string name="calendar_diagnostics_link_unverifiable">Impossible à vérifier</string>
     <string name="calendar_diagnostics_drift_fields">Différences : %1$s</string>
     <string name="calendar_diagnostics_trigger_drift">Écart du déclenchement enregistré : %1$s</string>
     <string name="calendar_diagnostics_drift_event_id">identifiant d’événement</string>
@@ -153,8 +172,47 @@
     <string name="calendar_diagnostics_hours_short">%1$d h</string>
     <string name="calendar_diagnostics_days_short">%1$d j</string>
     <string name="calendar_diagnostics_seconds_short">%1$d s</string>
+    <string name="calendar_diagnostics_about_title">À propos de cette liste</string>
+    <string name="calendar_diagnostics_show_details">Afficher</string>
+    <string name="calendar_diagnostics_hide_details">Masquer</string>
+    <plurals name="calendar_diagnostics_planned_alarm_label">
+        <item quantity="one">%1$d alarme prévue</item>
+        <item quantity="other">%1$d alarmes prévues</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_event_label">
+        <item quantity="one">%1$d événement</item>
+        <item quantity="other">%1$d événements</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_event_missing_issue">
+        <item quantity="one">L’alarme existe encore, mais son événement calendrier a peut-être été supprimé, déplacé ou n’est plus synchronisé.</item>
+        <item quantity="other">%1$d alarmes existent encore, mais leurs événements calendrier ont peut-être été supprimés, déplacés ou ne sont plus synchronisés.</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_marker_missing_issue">
+        <item quantity="one">%1$d alarme correspond à un événement dont le marqueur TCLOCK a été retiré.</item>
+        <item quantity="other">%1$d alarmes correspondent à des événements dont les marqueurs TCLOCK ont été retirés.</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_eligible_without_alarm_issue">
+        <item quantity="one">%1$d marqueur TCLOCK valide n’a pas encore d’alarme.</item>
+        <item quantity="other">%1$d marqueurs TCLOCK valides n’ont pas encore d’alarme.</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_drift_issue">
+        <item quantity="one">%1$d alarme doit être resynchronisée avec son événement.</item>
+        <item quantity="other">%1$d alarmes doivent être resynchronisées avec leurs événements.</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_duplicate_issue">
+        <item quantity="one">%1$d alarme est en double.</item>
+        <item quantity="other">%1$d alarmes sont en double.</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_invalid_pattern_issue">
+        <item quantity="one">%1$d événement contient « TCLOCK » avec un format invalide. Modifie sa description dans le calendrier, par exemple TCLOCK:-60min.</item>
+        <item quantity="other">%1$d événements contiennent « TCLOCK » avec un format invalide. Modifie leurs descriptions dans le calendrier, par exemple TCLOCK:-60min.</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_unverifiable_issue">
+        <item quantity="one">%1$d alarme n’a pas pu être vérifiée.</item>
+        <item quantity="other">%1$d alarmes n’ont pas pu être vérifiées.</item>
+    </plurals>
     <plurals name="calendar_diagnostics_alarm_count">
-        <item quantity="one">%d alarme prévue</item>
-        <item quantity="other">%d alarmes prévues</item>
+        <item quantity="one">%d alarme</item>
+        <item quantity="other">%d alarmes</item>
     </plurals>
 </resources>

@@ -1,75 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="@dimen/tiny_margin"
-    app:cardCornerRadius="@dimen/normal_margin"
-    app:cardElevation="0dp"
-    app:strokeColor="@color/color_primary"
-    app:strokeWidth="1dp">
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="64dp"
-        android:orientation="horizontal">
+        android:minHeight="58dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingVertical="@dimen/small_margin">
 
-        <View
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/calendar_diagnostics_event_color"
-            android:layout_width="5dp"
-            android:layout_height="match_parent"
-            android:background="@color/color_primary" />
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginEnd="@dimen/normal_margin"
+            app:cardCornerRadius="6dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/color_primary"
+            app:strokeWidth="1dp" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:paddingHorizontal="@dimen/normal_margin"
-            android:paddingVertical="@dimen/small_margin">
+            android:orientation="vertical">
 
-            <LinearLayout
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_event_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <org.fossify.commons.views.MyTextView
-                    android:id="@+id/calendar_diagnostics_event_title"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textStyle="bold"
-                    tools:text="Team meeting" />
-
-                <org.fossify.commons.views.MyTextView
-                    android:id="@+id/calendar_diagnostics_event_alarm_count"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/normal_margin"
-                    android:maxLines="1"
-                    android:textStyle="bold"
-                    tools:text="2 alarms" />
-
-            </LinearLayout>
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textStyle="bold"
+                tools:text="Team meeting" />
 
             <org.fossify.commons.views.MyTextView
                 android:id="@+id/calendar_diagnostics_event_time"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:alpha="0.75"
+                android:alpha="0.7"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:paddingTop="@dimen/tiny_margin"
-                tools:text="Jul 23, 2026, 15:00 – Jul 23, 2026, 16:00" />
+                tools:text="Jul 23, 15:00 – 16:00" />
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_event_warning"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:paddingTop="@dimen/tiny_margin"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="Invalid TCLOCK format"
+                tools:visibility="visible" />
 
         </LinearLayout>
 
+        <org.fossify.commons.views.MyTextView
+            android:id="@+id/calendar_diagnostics_event_alarm_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/normal_margin"
+            android:ellipsize="end"
+            android:maxWidth="112dp"
+            android:maxLines="1"
+            android:textStyle="bold"
+            tools:text="2 alarms" />
+
     </LinearLayout>
 
-</com.google.android.material.card.MaterialCardView>
+    <View
+        android:id="@+id/calendar_diagnostics_event_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:alpha="0.12" />
+
+</LinearLayout>
