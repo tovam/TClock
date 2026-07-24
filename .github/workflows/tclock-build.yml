@@ -1,4 +1,4 @@
-name: Build signed TCLOCK APK
+name: Build signed ClockT APK
 
 on:
   push:
@@ -91,20 +91,20 @@ jobs:
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner -print | sort -V | tail -n 1)"
           test -x "$APKSIGNER"
           "$APKSIGNER" verify --verbose --print-certs "$APK_PATH"
-          cp "$APK_PATH" "$RUNNER_TEMP/TCLOCK-latest.apk"
+          cp "$APK_PATH" "$RUNNER_TEMP/ClockT-latest.apk"
 
       - name: Publish public latest release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if gh release view latest >/dev/null 2>&1; then
-            gh release upload latest "$RUNNER_TEMP/TCLOCK-latest.apk" --clobber
+            gh release upload latest "$RUNNER_TEMP/ClockT-latest.apk" --clobber
             gh release edit latest \
-              --title "TCLOCK latest" \
+              --title "ClockT latest" \
               --notes "Signed APK built automatically from the latest main branch."
           else
-            gh release create latest "$RUNNER_TEMP/TCLOCK-latest.apk" \
+            gh release create latest "$RUNNER_TEMP/ClockT-latest.apk" \
               --target "${{ github.sha }}" \
-              --title "TCLOCK latest" \
+              --title "ClockT latest" \
               --notes "Signed APK built automatically from the latest main branch."
           fi

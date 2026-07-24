@@ -14,7 +14,7 @@ val keystorePropertiesFile: File = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
 val appVersionName = project.property("VERSION_NAME").toString()
 val appVersionCode = project.property("VERSION_CODE").toString().toInt()
-val appDisplayName = "TClock $appVersionName"
+val appDisplayName = "ClockT $appVersionName"
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
@@ -27,7 +27,7 @@ fun hasSigningVars(): Boolean {
 }
 
 base {
-    archivesName = "tclock-$appVersionCode"
+    archivesName = "clockt-$appVersionCode"
 }
 
 android {

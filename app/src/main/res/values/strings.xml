@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_launcher_name">TCLOCK</string>
+    <string name="app_launcher_name">ClockT</string>
     <string name="time_zone">Time zone</string>
     <string name="vibrate">Vibrate</string>
     <string name="no_days_selected">No days selected</string>
@@ -61,7 +61,7 @@
     <string name="clock_upcoming_calendar_source">Calendar · %1$s</string>
     <string name="clock_upcoming_manual_source">Manual · %1$s</string>
     <string name="clock_upcoming_manual_source_without_label">Manual</string>
-    <string name="calendar_diagnostics_title">Calendar events ↔ TClock alarms</string>
+    <string name="calendar_diagnostics_title">Calendar events ↔ ClockT alarms</string>
     <string name="calendar_diagnostics_overview_meta">%1$s – %2$s · Checked at %3$s</string>
     <string name="calendar_diagnostics_sync_short">Sync</string>
     <string name="calendar_diagnostics_allow_short">Allow</string>
@@ -76,17 +76,17 @@
     <string name="calendar_diagnostics_sync_needed_details">Some alarms no longer match their events. Sync to update them.</string>
     <string name="calendar_diagnostics_invalid_pattern_title">Invalid TCLOCK format</string>
     <string name="calendar_diagnostics_duplicate_title">Duplicate alarms</string>
-    <string name="calendar_diagnostics_permission_message">Calendar permission is missing. Calendar events cannot be read; any database records shown below are TClock records that could not be verified.</string>
-    <string name="calendar_diagnostics_provider_error">The calendar provider could not be read. Existing TClock records are shown as unverifiable and do not prove that an Android alarm is registered.</string>
-    <string name="calendar_diagnostics_sync_error">The refresh could not update the alarms. The diagnostic read below may still be available, but existing TClock alarm records were kept unchanged.</string>
+    <string name="calendar_diagnostics_permission_message">Calendar permission is missing. Calendar events cannot be read; any database records shown below are ClockT records that could not be verified.</string>
+    <string name="calendar_diagnostics_provider_error">The calendar provider could not be read. Existing ClockT records are shown as unverifiable and do not prove that an Android alarm is registered.</string>
+    <string name="calendar_diagnostics_sync_error">The refresh could not update the alarms. The diagnostic read below may still be available, but existing ClockT alarm records were kept unchanged.</string>
     <string name="calendar_diagnostics_unexpected_error">The calendar diagnostics could not be loaded. Try refreshing again.</string>
     <string name="calendar_diagnostics_retry">Retry</string>
     <string name="calendar_diagnostics_window_summary">Alarm window: %1$s – %2$s</string>
     <string name="calendar_diagnostics_query_summary">Visible calendar instances scanned: %1$s – %2$s</string>
-    <string name="calendar_diagnostics_counts_summary">%1$d events in the window · %2$d related outside · %3$d TClock alarm records</string>
+    <string name="calendar_diagnostics_counts_summary">%1$d events in the window · %2$d related outside · %3$d ClockT alarm records</string>
     <string name="calendar_diagnostics_health_summary">Relations: %1$d exact · %2$d drifted · %3$d duplicate · %4$d eligible without alarm · %5$d marker removed · %6$d event missing · %7$d invalid pattern · %8$d unverifiable</string>
     <string name="calendar_diagnostics_captured_summary">Read at %1$s</string>
-    <string name="calendar_diagnostics_alarm_manager_note">This screen shows TClock’s own database records. Android does not provide an API to enumerate alarms registered in AlarmManager, so TClock cannot independently confirm the system scheduler’s contents.</string>
+    <string name="calendar_diagnostics_alarm_manager_note">This screen shows ClockT’s own database records. Android does not provide an API to enumerate alarms registered in AlarmManager, so ClockT cannot independently confirm the system scheduler’s contents.</string>
     <string name="calendar_diagnostics_empty">No calendar event in the next 15 days.</string>
     <string name="calendar_diagnostics_planned_alarms_section">Planned alarms (%1$d)</string>
     <string name="calendar_diagnostics_expired_alarms_section">Already-triggered alarms (%1$d)</string>
@@ -96,17 +96,17 @@
     <string name="calendar_diagnostics_window_events_section">Events in the next 15 days (%1$d)</string>
     <string name="calendar_diagnostics_window_events_explanation">Every visible calendar event on this device overlapping the rolling 15-day window, including events without a tclock marker.</string>
     <string name="calendar_diagnostics_related_events_section">Related events outside the window (%1$d)</string>
-    <string name="calendar_diagnostics_related_events_explanation">Events outside the visible window that still have a marker trigger or a TClock database record in scope.</string>
+    <string name="calendar_diagnostics_related_events_explanation">Events outside the visible window that still have a marker trigger or a ClockT database record in scope.</string>
     <string name="calendar_diagnostics_unlinked_alarms_section">Alarms without a calendar event (%1$d)</string>
-    <string name="calendar_diagnostics_unlinked_alarms_explanation">TClock database records whose event occurrence was not returned by the current calendar scan.</string>
-    <string name="calendar_diagnostics_unverifiable_alarms_section">Unverifiable TClock alarm records (%1$d)</string>
+    <string name="calendar_diagnostics_unlinked_alarms_explanation">ClockT database records whose event occurrence was not returned by the current calendar scan.</string>
+    <string name="calendar_diagnostics_unverifiable_alarms_section">Unverifiable ClockT alarm records (%1$d)</string>
     <string name="calendar_diagnostics_unverifiable_alarms_explanation">The calendar could not be read, so these database records cannot currently be matched to events.</string>
     <string name="calendar_diagnostics_unknown_date">Unknown date</string>
     <string name="calendar_diagnostics_calendar_fallback">Calendar #%1$d</string>
     <string name="calendar_diagnostics_calendar_name">%1$s · calendar #%2$d</string>
     <string name="calendar_diagnostics_event_technical">Event #%1$d · occurrence %2$s</string>
     <string name="calendar_diagnostics_description">Full description</string>
-    <string name="calendar_diagnostics_markers_and_alarms">Markers and TClock alarm records</string>
+    <string name="calendar_diagnostics_markers_and_alarms">Markers and ClockT alarm records</string>
     <string name="calendar_diagnostics_marker_none">No tclock marker</string>
     <string name="calendar_diagnostics_marker_invalid">Contains “tclock” but no valid marker such as tclock:-30min (minutes: m/min/mins/minute(s); hours: h/hr(s)/hour(s)/heure(s); days: d/day(s)/j/jour(s))</string>
     <string name="calendar_diagnostics_marker_valid">%1$d valid tclock marker(s)</string>
@@ -119,7 +119,7 @@
     <string name="calendar_diagnostics_offset_at_start">At start</string>
     <string name="calendar_diagnostics_expected_trigger">Expected trigger: %1$s</string>
     <string name="calendar_diagnostics_marker_key">Marker key: %1$s</string>
-    <string name="calendar_diagnostics_linked_alarm_missing">No linked TClock alarm record, although this marker is eligible</string>
+    <string name="calendar_diagnostics_linked_alarm_missing">No linked ClockT alarm record, although this marker is eligible</string>
     <string name="calendar_diagnostics_alarm_not_expected">No alarm is expected for this marker in the current window</string>
     <string name="calendar_diagnostics_marker_missing_group">Alarm records whose marker is missing</string>
     <string name="calendar_diagnostics_marker_missing_explanation">The event occurrence still exists, but its current description no longer produces the stored alarm key.</string>
@@ -138,7 +138,7 @@
     <string name="calendar_diagnostics_one_shot">one-shot</string>
     <string name="calendar_diagnostics_not_one_shot">not one-shot</string>
     <string name="calendar_diagnostics_stored_label">Stored label: %1$s</string>
-    <string name="calendar_diagnostics_duplicate_alarm">Duplicate key: several TClock alarm records point to the same marker.</string>
+    <string name="calendar_diagnostics_duplicate_alarm">Duplicate key: several ClockT alarm records point to the same marker.</string>
     <string name="calendar_diagnostics_alarm_metadata">Event #%1$d · start %2$s · offset %3$d min · days %4$d</string>
     <string name="calendar_diagnostics_alarm_key">Stored key: %1$s</string>
     <string name="calendar_diagnostics_empty_key">(empty)</string>

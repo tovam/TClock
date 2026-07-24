@@ -44,7 +44,7 @@
         android:paddingTop="@dimen/normal_margin"
         android:textStyle="italic"
         android:visibility="gone"
-        tools:text="No linked TClock alarm record" />
+        tools:text="No linked ClockT alarm record" />
 
     <LinearLayout
         android:id="@+id/calendar_diagnostics_marker_alarms"

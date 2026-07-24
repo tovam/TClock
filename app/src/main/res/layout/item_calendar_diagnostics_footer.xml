@@ -51,6 +51,6 @@
         android:alpha="0.65"
         android:text="@string/calendar_diagnostics_alarm_manager_note"
         android:visibility="gone"
-        tools:text="This list reflects TClock records." />
+        tools:text="This list reflects ClockT records." />
 
 </LinearLayout>
