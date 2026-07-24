@@ -14,7 +14,7 @@ val keystorePropertiesFile: File = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
 val appVersionName = project.property("VERSION_NAME").toString()
 val appVersionCode = project.property("VERSION_CODE").toString().toInt()
-val appDisplayName = "ClockT $appVersionName"
+val appDisplayName = "ClockT"
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
