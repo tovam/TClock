@@ -57,7 +57,7 @@
     <string name="alarm_timed_out">Alarme expirée</string>
     <string name="scheduled_alarms">Alarmes programmées</string>
     <string name="no_scheduled_alarms">Aucune alarme n’est actuellement programmée</string>
-    <string name="calendar_permission_explanation">TCLOCK a besoin d’un accès en lecture seule au calendrier pour trouver les marqueurs TCLOCK dans la description des événements.</string>
+    <string name="calendar_permission_explanation">ClockT a besoin d’un accès en lecture seule au calendrier pour trouver les marqueurs ALARM ou ALARMS dans la description des événements.</string>
     <string name="allow_calendar_access">Autoriser l’accès au calendrier</string>
     <string name="sync_calendar_now">Synchroniser le calendrier</string>
     <string name="calendar_sync_failed">La synchronisation du calendrier a échoué. Les alarmes existantes ont été conservées.</string>
@@ -92,7 +92,7 @@
     <string name="calendar_diagnostics_expired_title">Alarme calendrier déjà déclenchée</string>
     <string name="calendar_diagnostics_sync_needed_title">Synchronisation nécessaire</string>
     <string name="calendar_diagnostics_sync_needed_details">Certaines alarmes ne correspondent plus à leur événement. Synchronise pour les actualiser.</string>
-    <string name="calendar_diagnostics_invalid_pattern_title">Format TCLOCK invalide</string>
+    <string name="calendar_diagnostics_invalid_pattern_title">Format ALARM/ALARMS invalide</string>
     <string name="calendar_diagnostics_duplicate_title">Alarmes en double</string>
     <string name="calendar_diagnostics_permission_message">L’accès au calendrier n’est pas autorisé. Les événements ne peuvent pas être lus ; les éventuels enregistrements affichés ci-dessous proviennent de la base de données de ClockT et n’ont pas pu être vérifiés.</string>
     <string name="calendar_diagnostics_provider_error">Le fournisseur de calendrier n’a pas pu être lu. Les enregistrements ClockT existants sont affichés comme invérifiables et ne prouvent pas qu’une alarme Android est enregistrée.</string>
@@ -112,7 +112,7 @@
     <string name="calendar_diagnostics_no_planned_alarms">Aucune alarme prévue pour le moment.</string>
     <string name="calendar_diagnostics_compact_events_explanation">Événements affichés de façon compacte avec leur couleur, leur nom, leur date et leur nombre d’alarmes prévues.</string>
     <string name="calendar_diagnostics_window_events_section">Événements des 15 prochains jours (%1$d)</string>
-    <string name="calendar_diagnostics_window_events_explanation">Tous les événements visibles sur cet appareil qui chevauchent la fenêtre glissante de 15 jours, y compris ceux qui ne contiennent aucun marqueur tclock.</string>
+    <string name="calendar_diagnostics_window_events_explanation">Tous les événements visibles sur cet appareil qui chevauchent la fenêtre glissante de 15 jours, y compris ceux qui ne contiennent aucun marqueur ALARM ou ALARMS.</string>
     <string name="calendar_diagnostics_related_events_section">Événements liés hors fenêtre (%1$d)</string>
     <string name="calendar_diagnostics_related_events_explanation">Événements hors de la fenêtre visible qui restent concernés par un déclenchement de marqueur ou un enregistrement ClockT.</string>
     <string name="calendar_diagnostics_unlinked_alarms_section">Alarmes sans événement de calendrier (%1$d)</string>
@@ -125,9 +125,9 @@
     <string name="calendar_diagnostics_event_technical">Événement nº %1$d · occurrence %2$s</string>
     <string name="calendar_diagnostics_description">Description complète</string>
     <string name="calendar_diagnostics_markers_and_alarms">Marqueurs et enregistrements d’alarme ClockT</string>
-    <string name="calendar_diagnostics_marker_none">Aucun marqueur tclock</string>
-    <string name="calendar_diagnostics_marker_invalid">Contient « tclock » mais aucun marqueur valide tel que tclock:-30min (minutes : m/min/mins/minute(s) ; heures : h/hr(s)/hour(s)/heure(s) ; jours : d/day(s)/j/jour(s))</string>
-    <string name="calendar_diagnostics_marker_valid">%1$d marqueur(s) tclock valide(s)</string>
+    <string name="calendar_diagnostics_marker_none">Aucun marqueur ALARM/ALARMS</string>
+    <string name="calendar_diagnostics_marker_invalid">Contient « alarm: » ou « alarms: » mais aucun marqueur valide tel que ALARM:-30min (minutes : m/min/mins/minute(s) ; heures : h/hr(s)/hour(s)/heure(s) ; jours : d/day(s)/j/jour(s))</string>
+    <string name="calendar_diagnostics_marker_valid">%1$d marqueur(s) ALARM/ALARMS valide(s)</string>
     <string name="calendar_diagnostics_in_window">Dans la fenêtre d’événements de 15 jours</string>
     <string name="calendar_diagnostics_outside_window">Hors de la fenêtre d’événements de 15 jours</string>
     <string name="calendar_diagnostics_all_day">Événement sur toute la journée</string>
@@ -164,10 +164,10 @@
     <string name="calendar_diagnostics_duplicate_short">Alarme en double</string>
     <string name="calendar_diagnostics_event_missing_alarm_warning">Événement calendrier introuvable</string>
     <string name="calendar_diagnostics_expired_alarm_warning">Déjà déclenchée · supprime-la dans Alarm pour arrêter toute sonnerie ou répétition</string>
-    <string name="calendar_diagnostics_marker_missing_alarm_warning">Marqueur TCLOCK retiré</string>
-    <string name="calendar_diagnostics_invalid_pattern_short">Format invalide · utilise TCLOCK:-60min</string>
+    <string name="calendar_diagnostics_marker_missing_alarm_warning">Marqueur ALARM/ALARMS retiré</string>
+    <string name="calendar_diagnostics_invalid_pattern_short">Format invalide · utilise ALARM:-60min</string>
     <string name="calendar_diagnostics_alarm_missing_short">Alarme pas encore créée</string>
-    <string name="calendar_diagnostics_marker_removed_short">Marqueur TCLOCK retiré</string>
+    <string name="calendar_diagnostics_marker_removed_short">Marqueur ALARM/ALARMS retiré</string>
     <string name="calendar_diagnostics_link_exact">Correspondance exacte dans la base</string>
     <string name="calendar_diagnostics_link_drift">À resynchroniser</string>
     <string name="calendar_diagnostics_link_marker_missing">Marqueur absent</string>
@@ -207,12 +207,12 @@
         <item quantity="other">%1$d alarmes calendrier ont atteint leur heure initiale et restent enregistrées. Supprime-les dans Alarm pour arrêter toute sonnerie ou répétition.</item>
     </plurals>
     <plurals name="calendar_diagnostics_marker_missing_issue">
-        <item quantity="one">%1$d alarme correspond à un événement dont le marqueur TCLOCK a été retiré.</item>
-        <item quantity="other">%1$d alarmes correspondent à des événements dont les marqueurs TCLOCK ont été retirés.</item>
+        <item quantity="one">%1$d alarme correspond à un événement dont le marqueur ALARM/ALARMS a été retiré.</item>
+        <item quantity="other">%1$d alarmes correspondent à des événements dont les marqueurs ALARM/ALARMS ont été retirés.</item>
     </plurals>
     <plurals name="calendar_diagnostics_eligible_without_alarm_issue">
-        <item quantity="one">%1$d marqueur TCLOCK valide n’a pas encore d’alarme.</item>
-        <item quantity="other">%1$d marqueurs TCLOCK valides n’ont pas encore d’alarme.</item>
+        <item quantity="one">%1$d marqueur ALARM/ALARMS valide n’a pas encore d’alarme.</item>
+        <item quantity="other">%1$d marqueurs ALARM/ALARMS valides n’ont pas encore d’alarme.</item>
     </plurals>
     <plurals name="calendar_diagnostics_drift_issue">
         <item quantity="one">%1$d alarme doit être resynchronisée avec son événement.</item>
@@ -223,8 +223,8 @@
         <item quantity="other">%1$d alarmes sont en double.</item>
     </plurals>
     <plurals name="calendar_diagnostics_invalid_pattern_issue">
-        <item quantity="one">%1$d événement contient « TCLOCK » avec un format invalide. Modifie sa description dans le calendrier, par exemple TCLOCK:-60min.</item>
-        <item quantity="other">%1$d événements contiennent « TCLOCK » avec un format invalide. Modifie leurs descriptions dans le calendrier, par exemple TCLOCK:-60min.</item>
+        <item quantity="one">%1$d événement contient « ALARM: » ou « ALARMS: » avec un format invalide. Modifie sa description dans le calendrier, par exemple ALARM:-60min.</item>
+        <item quantity="other">%1$d événements contiennent « ALARM: » ou « ALARMS: » avec un format invalide. Modifie leurs descriptions dans le calendrier, par exemple ALARM:-60min.</item>
     </plurals>
     <plurals name="calendar_diagnostics_unverifiable_issue">
         <item quantity="one">%1$d alarme n’a pas pu être vérifiée.</item>

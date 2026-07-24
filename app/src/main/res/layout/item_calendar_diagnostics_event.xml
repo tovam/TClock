@@ -58,7 +58,7 @@
                 android:paddingTop="@dimen/tiny_margin"
                 android:textStyle="bold"
                 android:visibility="gone"
-                tools:text="Invalid TCLOCK format"
+                tools:text="Invalid ALARM/ALARMS format"
                 tools:visibility="visible" />
 
         </LinearLayout>

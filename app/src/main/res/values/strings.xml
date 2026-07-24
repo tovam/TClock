@@ -39,7 +39,7 @@
     <string name="alarm_timed_out">Alarm timed out</string>
     <string name="scheduled_alarms">Scheduled alarms</string>
     <string name="no_scheduled_alarms">No alarm is currently scheduled</string>
-    <string name="calendar_permission_explanation">TCLOCK needs read-only calendar access to find TCLOCK markers in event descriptions.</string>
+    <string name="calendar_permission_explanation">ClockT needs read-only calendar access to find ALARM or ALARMS markers in event descriptions.</string>
     <string name="allow_calendar_access">Allow calendar access</string>
     <string name="sync_calendar_now">Sync calendar now</string>
     <string name="calendar_sync_failed">Calendar synchronization failed. Existing alarms were kept unchanged.</string>
@@ -74,7 +74,7 @@
     <string name="calendar_diagnostics_expired_title">Calendar alarm already triggered</string>
     <string name="calendar_diagnostics_sync_needed_title">Synchronization needed</string>
     <string name="calendar_diagnostics_sync_needed_details">Some alarms no longer match their events. Sync to update them.</string>
-    <string name="calendar_diagnostics_invalid_pattern_title">Invalid TCLOCK format</string>
+    <string name="calendar_diagnostics_invalid_pattern_title">Invalid ALARM/ALARMS format</string>
     <string name="calendar_diagnostics_duplicate_title">Duplicate alarms</string>
     <string name="calendar_diagnostics_permission_message">Calendar permission is missing. Calendar events cannot be read; any database records shown below are ClockT records that could not be verified.</string>
     <string name="calendar_diagnostics_provider_error">The calendar provider could not be read. Existing ClockT records are shown as unverifiable and do not prove that an Android alarm is registered.</string>
@@ -94,7 +94,7 @@
     <string name="calendar_diagnostics_no_planned_alarms">No planned alarm for now.</string>
     <string name="calendar_diagnostics_compact_events_explanation">Calendar events shown compactly with their color, name, date and number of planned alarms.</string>
     <string name="calendar_diagnostics_window_events_section">Events in the next 15 days (%1$d)</string>
-    <string name="calendar_diagnostics_window_events_explanation">Every visible calendar event on this device overlapping the rolling 15-day window, including events without a tclock marker.</string>
+    <string name="calendar_diagnostics_window_events_explanation">Every visible calendar event on this device overlapping the rolling 15-day window, including events without an ALARM or ALARMS marker.</string>
     <string name="calendar_diagnostics_related_events_section">Related events outside the window (%1$d)</string>
     <string name="calendar_diagnostics_related_events_explanation">Events outside the visible window that still have a marker trigger or a ClockT database record in scope.</string>
     <string name="calendar_diagnostics_unlinked_alarms_section">Alarms without a calendar event (%1$d)</string>
@@ -107,9 +107,9 @@
     <string name="calendar_diagnostics_event_technical">Event #%1$d · occurrence %2$s</string>
     <string name="calendar_diagnostics_description">Full description</string>
     <string name="calendar_diagnostics_markers_and_alarms">Markers and ClockT alarm records</string>
-    <string name="calendar_diagnostics_marker_none">No tclock marker</string>
-    <string name="calendar_diagnostics_marker_invalid">Contains “tclock” but no valid marker such as tclock:-30min (minutes: m/min/mins/minute(s); hours: h/hr(s)/hour(s)/heure(s); days: d/day(s)/j/jour(s))</string>
-    <string name="calendar_diagnostics_marker_valid">%1$d valid tclock marker(s)</string>
+    <string name="calendar_diagnostics_marker_none">No ALARM/ALARMS marker</string>
+    <string name="calendar_diagnostics_marker_invalid">Contains “alarm:” or “alarms:” but no valid marker such as ALARM:-30min (minutes: m/min/mins/minute(s); hours: h/hr(s)/hour(s)/heure(s); days: d/day(s)/j/jour(s))</string>
+    <string name="calendar_diagnostics_marker_valid">%1$d valid ALARM/ALARMS marker(s)</string>
     <string name="calendar_diagnostics_in_window">In the 15-day event window</string>
     <string name="calendar_diagnostics_outside_window">Outside the 15-day event window</string>
     <string name="calendar_diagnostics_all_day">All-day event</string>
@@ -146,10 +146,10 @@
     <string name="calendar_diagnostics_duplicate_short">Duplicate alarm</string>
     <string name="calendar_diagnostics_event_missing_alarm_warning">Calendar event not found</string>
     <string name="calendar_diagnostics_expired_alarm_warning">Already triggered · remove it from Alarm to stop any ring or snooze</string>
-    <string name="calendar_diagnostics_marker_missing_alarm_warning">TCLOCK marker removed</string>
-    <string name="calendar_diagnostics_invalid_pattern_short">Invalid format · use TCLOCK:-60min</string>
+    <string name="calendar_diagnostics_marker_missing_alarm_warning">ALARM/ALARMS marker removed</string>
+    <string name="calendar_diagnostics_invalid_pattern_short">Invalid format · use ALARM:-60min</string>
     <string name="calendar_diagnostics_alarm_missing_short">Alarm not created yet</string>
-    <string name="calendar_diagnostics_marker_removed_short">TCLOCK marker removed</string>
+    <string name="calendar_diagnostics_marker_removed_short">ALARM/ALARMS marker removed</string>
     <string name="calendar_diagnostics_link_exact">Exact database match</string>
     <string name="calendar_diagnostics_link_drift">Needs synchronization</string>
     <string name="calendar_diagnostics_link_marker_missing">Marker missing</string>
@@ -189,12 +189,12 @@
         <item quantity="other">%1$d calendar alarms have reached their original trigger time and are still stored. Remove them from Alarm to stop any ring or snooze.</item>
     </plurals>
     <plurals name="calendar_diagnostics_marker_missing_issue">
-        <item quantity="one">%1$d alarm belongs to an event whose TCLOCK marker was removed.</item>
-        <item quantity="other">%1$d alarms belong to events whose TCLOCK markers were removed.</item>
+        <item quantity="one">%1$d alarm belongs to an event whose ALARM/ALARMS marker was removed.</item>
+        <item quantity="other">%1$d alarms belong to events whose ALARM/ALARMS markers were removed.</item>
     </plurals>
     <plurals name="calendar_diagnostics_eligible_without_alarm_issue">
-        <item quantity="one">%1$d valid TCLOCK marker does not yet have an alarm.</item>
-        <item quantity="other">%1$d valid TCLOCK markers do not yet have alarms.</item>
+        <item quantity="one">%1$d valid ALARM/ALARMS marker does not yet have an alarm.</item>
+        <item quantity="other">%1$d valid ALARM/ALARMS markers do not yet have alarms.</item>
     </plurals>
     <plurals name="calendar_diagnostics_drift_issue">
         <item quantity="one">%1$d alarm needs to be synchronized with its event.</item>
@@ -205,8 +205,8 @@
         <item quantity="other">%1$d alarms are duplicated.</item>
     </plurals>
     <plurals name="calendar_diagnostics_invalid_pattern_issue">
-        <item quantity="one">%1$d event contains “TCLOCK” with an invalid format. Edit its calendar description, for example TCLOCK:-60min.</item>
-        <item quantity="other">%1$d events contain “TCLOCK” with an invalid format. Edit their calendar descriptions, for example TCLOCK:-60min.</item>
+        <item quantity="one">%1$d event contains “ALARM:” or “ALARMS:” with an invalid format. Edit its calendar description, for example ALARM:-60min.</item>
+        <item quantity="other">%1$d events contain “ALARM:” or “ALARMS:” with an invalid format. Edit their calendar descriptions, for example ALARM:-60min.</item>
     </plurals>
     <plurals name="calendar_diagnostics_unverifiable_issue">
         <item quantity="one">%1$d alarm could not be verified.</item>

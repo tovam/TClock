@@ -17,17 +17,17 @@ class CalendarDiagnosticsBuilderTest {
             event(
                 eventId = 1L,
                 beginMillis = now + hours(4),
-                description = "tclock:30min and TCLOCK:+2h"
+                description = "alarm:30min and ALARMS:+2h"
             ),
             event(
                 eventId = 2L,
                 beginMillis = now + hours(5),
-                description = "ordinary calendar note"
+                description = "ordinary note about the fire alarm inspection"
             ),
             event(
                 eventId = 3L,
                 beginMillis = now + hours(6),
-                description = "malformed tclock reminder"
+                description = "malformed ALARM: reminder"
             )
         )
 
@@ -58,7 +58,7 @@ class CalendarDiagnosticsBuilderTest {
             eventId = 10L,
             beginMillis = now + hours(8),
             title = "Flight",
-            description = "tclock:30min"
+            description = "alarm:30min"
         )
         val triggerAtMillis = record.beginMillis - minutes(30)
         val key = CalendarAlarmKey(
@@ -105,12 +105,12 @@ class CalendarDiagnosticsBuilderTest {
             event(
                 eventId = 42L,
                 beginMillis = firstStart,
-                description = "tclock:1h"
+                description = "alarm:1h"
             ),
             event(
                 eventId = 42L,
                 beginMillis = secondStart,
-                description = "tclock:1h"
+                description = "alarms:1h"
             )
         )
 
@@ -153,7 +153,7 @@ class CalendarDiagnosticsBuilderTest {
         val record = event(
             eventId = 60L,
             beginMillis = now + days(16),
-            description = "tclock:2d"
+            description = "alarm:2d"
         )
 
         val snapshot = build(records = listOf(record))
@@ -169,44 +169,44 @@ class CalendarDiagnosticsBuilderTest {
         val allDay = event(
             eventId = 61L,
             beginMillis = now + hours(1),
-            description = "tclock:0min",
+            description = "alarm:0min",
             isAllDay = true
         )
         val canceled = event(
             eventId = 62L,
             beginMillis = now + hours(2),
-            description = "tclock:0min",
+            description = "alarms:0min",
             isCanceled = true
         )
         val unsupported = event(
             eventId = 63L,
             beginMillis = now + days(1),
-            description = "tclock:16d"
+            description = "alarm:16d"
         )
         val past = event(
             eventId = 64L,
             beginMillis = now + minutes(10),
-            description = "tclock:30min"
+            description = "alarms:30min"
         )
         val exactNow = event(
             eventId = 65L,
             beginMillis = now,
-            description = "tclock:0min"
+            description = "alarm:0min"
         )
         val afterNow = event(
             eventId = 66L,
             beginMillis = now + 1L,
-            description = "tclock:0min"
+            description = "alarms:0min"
         )
         val exactEnd = event(
             eventId = 67L,
             beginMillis = window.triggerEndMillis,
-            description = "tclock:0min"
+            description = "alarm:0min"
         )
         val afterEnd = event(
             eventId = 68L,
             beginMillis = window.triggerEndMillis + 1L,
-            description = "tclock:0min"
+            description = "alarms:0min"
         )
         val afterEndAlarm = alarm(
             id = 680,

@@ -131,7 +131,7 @@ internal data class CalendarEventRecord(
 
 internal object CalendarDiagnosticsBuilder {
     private val markerMentionPattern = Regex(
-        pattern = """(?<![\p{L}\p{N}_])tclock(?![\p{L}\p{N}_])""",
+        pattern = """(?<![\p{L}\p{N}_])alarms?(?![\p{L}\p{N}_])\s*:""",
         option = RegexOption.IGNORE_CASE
     )
 
