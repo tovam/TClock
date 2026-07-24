@@ -62,6 +62,17 @@ class TClockPatternParserTest {
     }
 
     @Test
+    fun declarationsParsedMarkersAndUniqueOffsetsAreCountedSeparately() {
+        val result = TClockPatternParser.parse(
+            "ALARM:30min alarms:30m alarm:+1h ALARMS:later fire alarm inspection"
+        )
+
+        assertEquals(4, result.declarationCount)
+        assertEquals(3, result.parsedCount)
+        assertEquals(setOf(-30, 60), result.offsets)
+    }
+
+    @Test
     fun delayAndSupportedUnitAreMandatory() {
         assertTrue(TClockPatternParser.parseOffsets("alarm:").isEmpty())
         assertTrue(TClockPatternParser.parseOffsets("alarms:30").isEmpty())

@@ -143,6 +143,19 @@
     <string name="calendar_diagnostics_alarm_key">Stored key: %1$s</string>
     <string name="calendar_diagnostics_empty_key">(empty)</string>
     <string name="calendar_diagnostics_event_starts">event %1$s</string>
+    <string name="calendar_diagnostics_show_event_details">Show event details</string>
+    <string name="calendar_diagnostics_hide_event_details">Hide event details</string>
+    <string name="calendar_diagnostics_event_detail_title">Event details</string>
+    <string name="calendar_diagnostics_event_detail_metadata">%1$s · event #%2$d</string>
+    <string name="calendar_diagnostics_event_detail_declarations">%1$d\nDeclared</string>
+    <string name="calendar_diagnostics_event_detail_parsed">%1$d\nParsed</string>
+    <string name="calendar_diagnostics_event_detail_created">%1$d\nCreated</string>
+    <string name="calendar_diagnostics_event_detail_active">%1$d\nActive</string>
+    <string name="calendar_diagnostics_event_detail_passed">%1$d\nPast</string>
+    <string name="calendar_diagnostics_event_detail_not_created">%1$d\nNot created</string>
+    <string name="calendar_diagnostics_event_detail_current_state_note">“Declared” counts ALARM:/ALARMS: prefixes; “Parsed” counts valid declarations, including duplicates. Current state only: an alarm deleted after dismissal is no longer counted as created or past. “Not created” means an eligible unique alarm has no current ClockT record.</string>
+    <string name="calendar_diagnostics_event_detail_alarms_title">Alarm details</string>
+    <string name="calendar_diagnostics_event_detail_no_alarms">No parsed alarm or stored ClockT record for this event.</string>
     <string name="calendar_diagnostics_duplicate_short">Duplicate alarm</string>
     <string name="calendar_diagnostics_event_missing_alarm_warning">Calendar event not found</string>
     <string name="calendar_diagnostics_expired_alarm_warning">Already triggered · remove it from Alarm to stop any ring or snooze</string>
@@ -215,6 +228,22 @@
     <plurals name="calendar_diagnostics_alarm_count">
         <item quantity="one">%d alarm</item>
         <item quantity="other">%d alarms</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_event_detail_created_count">
+        <item quantity="one">%1$d created</item>
+        <item quantity="other">%1$d created</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_event_detail_active_count">
+        <item quantity="one">%1$d active</item>
+        <item quantity="other">%1$d active</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_event_detail_passed_count">
+        <item quantity="one">%1$d past</item>
+        <item quantity="other">%1$d past</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_event_detail_disabled_count">
+        <item quantity="one">%1$d disabled</item>
+        <item quantity="other">%1$d disabled</item>
     </plurals>
 
     <!-- Timer -->

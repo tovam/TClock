@@ -83,11 +83,43 @@ data class CalendarEventDiagnostic(
     val isCanceled: Boolean,
     val isInDisplayWindow: Boolean,
     val markerParseState: CalendarMarkerParseState,
+    val markerDeclarationCount: Int,
+    val parsedMarkerCount: Int,
     val markers: List<CalendarMarkerDiagnostic>,
     val markerMissingAlarms: List<CalendarAlarmDiagnostic>,
 ) {
     val alarms: List<CalendarAlarmDiagnostic>
         get() = markers.flatMap { it.alarms } + markerMissingAlarms
+}
+
+data class CalendarEventAlarmSummary(
+    val declarations: Int,
+    val parsed: Int,
+    val created: Int,
+    val active: Int,
+    val passed: Int,
+    val notCreated: Int,
+)
+
+fun CalendarEventDiagnostic.alarmSummary(nowMillis: Long): CalendarEventAlarmSummary {
+    return CalendarEventAlarmSummary(
+        declarations = markerDeclarationCount,
+        parsed = parsedMarkerCount,
+        created = alarms.size,
+        active = alarms.count { diagnostic ->
+            diagnostic.alarm.isEnabled &&
+                diagnostic.alarm.oneShot &&
+                diagnostic.alarm.triggerAtMillis > nowMillis
+        },
+        passed = alarms.count { diagnostic ->
+            diagnostic.alarm.triggerAtMillis > 0L &&
+                diagnostic.alarm.triggerAtMillis <= nowMillis
+        },
+        notCreated = markers.count { marker ->
+            marker.disposition == CalendarMarkerDisposition.ELIGIBLE &&
+                marker.alarms.isEmpty()
+        }
+    )
 }
 
 data class CalendarDiagnosticsCounts(
@@ -130,11 +162,6 @@ internal data class CalendarEventRecord(
 )
 
 internal object CalendarDiagnosticsBuilder {
-    private val markerMentionPattern = Regex(
-        pattern = """(?<![\p{L}\p{N}_])alarms?(?![\p{L}\p{N}_])\s*:""",
-        option = RegexOption.IGNORE_CASE
-    )
-
     fun build(
         capturedAtMillis: Long,
         window: CalendarAlarmWindow.Range,
@@ -249,8 +276,8 @@ internal object CalendarDiagnosticsBuilder {
         untitledEventLabel: String,
     ): CalendarEventDiagnostic {
         val title = record.title?.takeIf { it.isNotBlank() } ?: untitledEventLabel
-        val offsets = TClockPatternParser.parseOffsets(record.description)
-        val markers = offsets
+        val parseResult = TClockPatternParser.parse(record.description)
+        val markers = parseResult.offsets
             .map { offsetMinutes ->
                 buildMarkerDiagnostic(
                     record = record,
@@ -276,7 +303,9 @@ internal object CalendarDiagnosticsBuilder {
             isAllDay = record.isAllDay,
             isCanceled = record.isCanceled,
             isInDisplayWindow = record.overlapsDisplayWindow(window),
-            markerParseState = markerParseState(record.description, offsets),
+            markerParseState = markerParseState(parseResult),
+            markerDeclarationCount = parseResult.declarationCount,
+            parsedMarkerCount = parseResult.parsedCount,
             markers = markers,
             markerMissingAlarms = emptyList()
         )
@@ -361,15 +390,12 @@ internal object CalendarDiagnosticsBuilder {
         return eventsWithMissingMarkers to eventMissingAlarms
     }
 
-    private fun markerParseState(
-        description: String,
-        offsets: Set<Int>,
-    ): CalendarMarkerParseState {
+    private fun markerParseState(result: TClockPatternParser.Result): CalendarMarkerParseState {
         return when {
-            offsets.isNotEmpty() -> CalendarMarkerParseState.VALID
-            markerMentionPattern.containsMatchIn(description) ->
+            result.declarationCount == 0 -> CalendarMarkerParseState.NONE
+            result.parsedCount < result.declarationCount ->
                 CalendarMarkerParseState.INVALID_MENTION
-            else -> CalendarMarkerParseState.NONE
+            else -> CalendarMarkerParseState.VALID
         }
     }
 

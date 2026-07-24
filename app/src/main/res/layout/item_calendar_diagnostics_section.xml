@@ -4,8 +4,8 @@
     android:id="@+id/calendar_diagnostics_section_title"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingTop="@dimen/activity_margin"
-    android:paddingBottom="@dimen/small_margin"
+    android:paddingTop="@dimen/normal_margin"
+    android:paddingBottom="@dimen/tiny_margin"
     android:textSize="@dimen/big_text_size"
     android:textStyle="bold"
     tools:text="Planned alarms (4)" />

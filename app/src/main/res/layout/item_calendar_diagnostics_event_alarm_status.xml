@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingVertical="6dp">
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/calendar_diagnostics_event_alarm_status_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textStyle="bold"
+        tools:text="1 h before" />
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/calendar_diagnostics_event_alarm_status_trigger"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:alpha="0.7"
+        android:ellipsize="end"
+        android:maxLines="1"
+        tools:text="Expected trigger: Jul 24, 09:00" />
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/calendar_diagnostics_event_alarm_status_state"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="2dp"
+        android:textStyle="bold"
+        tools:text="1 created · 1 active" />
+
+    <View
+        android:id="@+id/calendar_diagnostics_event_alarm_status_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="6dp"
+        android:alpha="0.12" />
+
+</LinearLayout>

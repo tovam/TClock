@@ -161,6 +161,19 @@
     <string name="calendar_diagnostics_alarm_key">Clé enregistrée : %1$s</string>
     <string name="calendar_diagnostics_empty_key">(vide)</string>
     <string name="calendar_diagnostics_event_starts">événement %1$s</string>
+    <string name="calendar_diagnostics_show_event_details">Afficher les détails de l’événement</string>
+    <string name="calendar_diagnostics_hide_event_details">Masquer les détails de l’événement</string>
+    <string name="calendar_diagnostics_event_detail_title">Détails de l’événement</string>
+    <string name="calendar_diagnostics_event_detail_metadata">%1$s · événement nº %2$d</string>
+    <string name="calendar_diagnostics_event_detail_declarations">%1$d\nDéclarées</string>
+    <string name="calendar_diagnostics_event_detail_parsed">%1$d\nParsées</string>
+    <string name="calendar_diagnostics_event_detail_created">%1$d\nCréées</string>
+    <string name="calendar_diagnostics_event_detail_active">%1$d\nActives</string>
+    <string name="calendar_diagnostics_event_detail_passed">%1$d\nPassées</string>
+    <string name="calendar_diagnostics_event_detail_not_created">%1$d\nNon créées</string>
+    <string name="calendar_diagnostics_event_detail_current_state_note">« Déclarées » compte les préfixes ALARM:/ALARMS: ; « Parsées » compte les déclarations valides, doublons compris. État actuel uniquement : une alarme supprimée après son arrêt n’est plus comptée comme créée ou passée. « Non créées » désigne les alarmes uniques éligibles sans enregistrement ClockT actuel.</string>
+    <string name="calendar_diagnostics_event_detail_alarms_title">Détail des alarmes</string>
+    <string name="calendar_diagnostics_event_detail_no_alarms">Aucune alarme parsée ni aucun enregistrement ClockT pour cet événement.</string>
     <string name="calendar_diagnostics_duplicate_short">Alarme en double</string>
     <string name="calendar_diagnostics_event_missing_alarm_warning">Événement calendrier introuvable</string>
     <string name="calendar_diagnostics_expired_alarm_warning">Déjà déclenchée · supprime-la dans Alarm pour arrêter toute sonnerie ou répétition</string>
@@ -233,5 +246,21 @@
     <plurals name="calendar_diagnostics_alarm_count">
         <item quantity="one">%d alarme</item>
         <item quantity="other">%d alarmes</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_event_detail_created_count">
+        <item quantity="one">%1$d créée</item>
+        <item quantity="other">%1$d créées</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_event_detail_active_count">
+        <item quantity="one">%1$d active</item>
+        <item quantity="other">%1$d actives</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_event_detail_passed_count">
+        <item quantity="one">%1$d passée</item>
+        <item quantity="other">%1$d passées</item>
+    </plurals>
+    <plurals name="calendar_diagnostics_event_detail_disabled_count">
+        <item quantity="one">%1$d désactivée</item>
+        <item quantity="other">%1$d désactivées</item>
     </plurals>
 </resources>

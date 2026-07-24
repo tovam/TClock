@@ -11,6 +11,7 @@ import org.fossify.clock.R
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsAlarmBinding
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsEmptyBinding
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsEventBinding
+import org.fossify.clock.databinding.ItemCalendarDiagnosticsEventAlarmStatusBinding
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsFooterBinding
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsOverviewBinding
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsSectionBinding
@@ -18,9 +19,13 @@ import org.fossify.clock.helpers.CalendarAlarmDiagnostic
 import org.fossify.clock.helpers.CalendarAlarmLinkStatus
 import org.fossify.clock.helpers.CalendarDiagnosticsProviderState
 import org.fossify.clock.helpers.CalendarDiagnosticsSnapshot
+import org.fossify.clock.helpers.CalendarEventAlarmSummary
 import org.fossify.clock.helpers.CalendarEventDiagnostic
+import org.fossify.clock.helpers.CalendarMarkerDiagnostic
 import org.fossify.clock.helpers.CalendarMarkerDisposition
 import org.fossify.clock.helpers.CalendarMarkerParseState
+import org.fossify.clock.helpers.CalendarOccurrenceKey
+import org.fossify.clock.helpers.alarmSummary
 import org.fossify.commons.extensions.beVisibleIf
 import java.text.DateFormat
 import java.time.Instant
@@ -49,7 +54,8 @@ class CalendarDiagnosticsAdapter(
 
         data class Event(
             val diagnostic: CalendarEventDiagnostic,
-            val plannedAlarmCount: Int,
+            val summary: CalendarEventAlarmSummary,
+            val capturedAtMillis: Long,
         ) : Row
 
         data class Alarm(
@@ -85,6 +91,7 @@ class CalendarDiagnosticsAdapter(
     private var rows: List<Row> = emptyList()
     private var isRefreshing = false
     private var isFooterExpanded = false
+    private val expandedEvents = mutableSetOf<CalendarOccurrenceKey>()
 
     @SuppressLint("NotifyDataSetChanged")
     fun submitSnapshot(
@@ -92,6 +99,7 @@ class CalendarDiagnosticsAdapter(
         syncFailed: Boolean,
     ) {
         isRefreshing = false
+        expandedEvents.retainAll(snapshot.events.mapTo(mutableSetOf()) { it.key })
         rows = buildRows(snapshot, syncFailed)
         notifyDataSetChanged()
     }
@@ -184,9 +192,6 @@ class CalendarDiagnosticsAdapter(
                 it.diagnostic.alarm.triggerAtMillis > snapshot.capturedAtMillis
         }
         val expiredAlarms = storedAlarms.filter { it.isExpired }
-        val plannedAlarmIds = plannedAlarms.mapTo(mutableSetOf()) {
-            it.diagnostic.alarm.id
-        }
         add(
             Row.Overview(
                 snapshot = snapshot,
@@ -239,7 +244,7 @@ class CalendarDiagnosticsAdapter(
             if (displayWindowEvents.isEmpty()) {
                 add(Row.Empty(context.getString(R.string.calendar_diagnostics_empty)))
             } else {
-                appendEventRows(displayWindowEvents, plannedAlarmIds)
+                appendEventRows(displayWindowEvents, snapshot.capturedAtMillis)
             }
 
             val relatedEventsOutsideWindow = snapshot.events.filterNot { it.isInDisplayWindow }
@@ -252,7 +257,7 @@ class CalendarDiagnosticsAdapter(
                         )
                     )
                 )
-                appendEventRows(relatedEventsOutsideWindow, plannedAlarmIds)
+                appendEventRows(relatedEventsOutsideWindow, snapshot.capturedAtMillis)
             }
         }
 
@@ -321,15 +326,14 @@ class CalendarDiagnosticsAdapter(
 
     private fun MutableList<Row>.appendEventRows(
         events: List<CalendarEventDiagnostic>,
-        plannedAlarmIds: Set<Int>,
+        capturedAtMillis: Long,
     ) {
         events.forEach { event ->
             add(
                 Row.Event(
                     diagnostic = event,
-                    plannedAlarmCount = event.alarms.count {
-                        it.alarm.id in plannedAlarmIds
-                    }
+                    summary = event.alarmSummary(capturedAtMillis),
+                    capturedAtMillis = capturedAtMillis
                 )
             )
         }
@@ -451,6 +455,7 @@ class CalendarDiagnosticsAdapter(
         fun bind(row: Row.Event) = binding.apply {
             val event = row.diagnostic
             val accentColor = event.displayColor ?: primaryColor
+            val isExpanded = event.key in expandedEvents
             root.setBackgroundColor(backgroundColor)
             calendarDiagnosticsEventColor.apply {
                 setCardBackgroundColor(accentColor)
@@ -472,13 +477,292 @@ class CalendarDiagnosticsAdapter(
             calendarDiagnosticsEventAlarmCount.apply {
                 text = context.resources.getQuantityString(
                     R.plurals.calendar_diagnostics_alarm_count,
-                    row.plannedAlarmCount,
-                    row.plannedAlarmCount
+                    row.summary.active,
+                    row.summary.active
                 )
                 setTextColor(primaryColor)
             }
+            calendarDiagnosticsEventExpand.apply {
+                imageTintList = ColorStateList.valueOf(primaryColor)
+                rotation = if (isExpanded) 180f else 0f
+                contentDescription = context.getString(
+                    if (isExpanded) {
+                        R.string.calendar_diagnostics_hide_event_details
+                    } else {
+                        R.string.calendar_diagnostics_show_event_details
+                    }
+                )
+            }
+            calendarDiagnosticsEventHeader.apply {
+                contentDescription = calendarDiagnosticsEventExpand.contentDescription
+                setOnClickListener {
+                    if (!expandedEvents.add(event.key)) {
+                        expandedEvents.remove(event.key)
+                    }
+                    val position = bindingAdapterPosition
+                    if (position != RecyclerView.NO_POSITION) {
+                        notifyItemChanged(position)
+                    }
+                }
+            }
+            calendarDiagnosticsEventDetails.beVisibleIf(isExpanded)
+            if (isExpanded) {
+                bindExpandedDetails(row, accentColor)
+            } else {
+                calendarDiagnosticsEventDetailAlarmList.removeAllViews()
+            }
             calendarDiagnosticsEventDivider.setBackgroundColor(textColor)
         }
+
+        private fun bindExpandedDetails(
+            row: Row.Event,
+            accentColor: Int,
+        ) = binding.apply {
+            val event = row.diagnostic
+            val summary = row.summary
+            calendarDiagnosticsEventDetails.apply {
+                setCardBackgroundColor(backgroundColor)
+                strokeColor = accentColor
+            }
+            listOf(
+                calendarDiagnosticsEventDetailTitle,
+                calendarDiagnosticsEventDetailMetadata,
+                calendarDiagnosticsEventDetailTime,
+                calendarDiagnosticsEventDetailFlags,
+                calendarDiagnosticsEventDetailCurrentStateNote,
+                calendarDiagnosticsEventDetailAlarmsTitle,
+                calendarDiagnosticsEventDetailNoAlarms,
+                calendarDiagnosticsEventDetailDescriptionLabel,
+                calendarDiagnosticsEventDetailDescription
+            ).forEach { it.setTextColor(textColor) }
+            listOf(
+                calendarDiagnosticsEventDetailDeclarations,
+                calendarDiagnosticsEventDetailParsed,
+                calendarDiagnosticsEventDetailCreated,
+                calendarDiagnosticsEventDetailActive,
+                calendarDiagnosticsEventDetailPassed,
+                calendarDiagnosticsEventDetailNotCreated
+            ).forEach { it.setTextColor(primaryColor) }
+
+            val calendarName = event.calendarDisplayName.ifBlank {
+                context.getString(
+                    R.string.calendar_diagnostics_calendar_fallback,
+                    event.calendarId
+                )
+            }
+            calendarDiagnosticsEventDetailMetadata.text = context.getString(
+                R.string.calendar_diagnostics_event_detail_metadata,
+                calendarName,
+                event.key.eventId
+            )
+            calendarDiagnosticsEventDetailTime.text = formatEventRange(event)
+            calendarDiagnosticsEventDetailFlags.text = formatEventFlags(event)
+            calendarDiagnosticsEventDetailDeclarations.text = context.getString(
+                R.string.calendar_diagnostics_event_detail_declarations,
+                summary.declarations
+            )
+            calendarDiagnosticsEventDetailParsed.text = context.getString(
+                R.string.calendar_diagnostics_event_detail_parsed,
+                summary.parsed
+            )
+            calendarDiagnosticsEventDetailCreated.text = context.getString(
+                R.string.calendar_diagnostics_event_detail_created,
+                summary.created
+            )
+            calendarDiagnosticsEventDetailActive.text = context.getString(
+                R.string.calendar_diagnostics_event_detail_active,
+                summary.active
+            )
+            calendarDiagnosticsEventDetailPassed.text = context.getString(
+                R.string.calendar_diagnostics_event_detail_passed,
+                summary.passed
+            )
+            calendarDiagnosticsEventDetailNotCreated.text = context.getString(
+                R.string.calendar_diagnostics_event_detail_not_created,
+                summary.notCreated
+            )
+
+            calendarDiagnosticsEventDetailAlarmList.removeAllViews()
+            event.markers.forEach { marker ->
+                addMarkerStatus(
+                    parent = calendarDiagnosticsEventDetailAlarmList,
+                    marker = marker,
+                    capturedAtMillis = row.capturedAtMillis
+                )
+            }
+            event.markerMissingAlarms.forEach { diagnostic ->
+                addMarkerMissingStatus(
+                    parent = calendarDiagnosticsEventDetailAlarmList,
+                    diagnostic = diagnostic,
+                    capturedAtMillis = row.capturedAtMillis
+                )
+            }
+            calendarDiagnosticsEventDetailNoAlarms.beVisibleIf(
+                event.markers.isEmpty() && event.markerMissingAlarms.isEmpty()
+            )
+
+            val hasDescription = event.description.isNotBlank()
+            calendarDiagnosticsEventDetailDescriptionHolder.beVisibleIf(hasDescription)
+            calendarDiagnosticsEventDetailDescription.text = event.description
+        }
+    }
+
+    private fun addMarkerStatus(
+        parent: ViewGroup,
+        marker: CalendarMarkerDiagnostic,
+        capturedAtMillis: Long,
+    ) {
+        val itemBinding = ItemCalendarDiagnosticsEventAlarmStatusBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
+        val state = if (marker.alarms.isEmpty()) {
+            context.getString(
+                if (marker.disposition == CalendarMarkerDisposition.ELIGIBLE) {
+                    R.string.calendar_diagnostics_alarm_missing_short
+                } else {
+                    marker.disposition.labelResource()
+                }
+            )
+        } else {
+            buildAlarmRecordState(
+                diagnostics = marker.alarms,
+                capturedAtMillis = capturedAtMillis,
+                disposition = marker.disposition
+            )
+        }
+        bindEventAlarmStatus(
+            binding = itemBinding,
+            title = formatOffset(marker.key.offsetMinutes),
+            trigger = context.getString(
+                R.string.calendar_diagnostics_expected_trigger,
+                formatDateTime(marker.triggerAtMillis)
+            ),
+            state = state
+        )
+        parent.addView(itemBinding.root)
+    }
+
+    private fun addMarkerMissingStatus(
+        parent: ViewGroup,
+        diagnostic: CalendarAlarmDiagnostic,
+        capturedAtMillis: Long,
+    ) {
+        val itemBinding = ItemCalendarDiagnosticsEventAlarmStatusBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
+        val alarm = diagnostic.alarm
+        val recordState = buildAlarmRecordState(
+            diagnostics = listOf(diagnostic),
+            capturedAtMillis = capturedAtMillis,
+            disposition = null
+        )
+        bindEventAlarmStatus(
+            binding = itemBinding,
+            title = formatOffset(alarm.calendarOffsetMinutes),
+            trigger = if (alarm.triggerAtMillis > 0L) {
+                context.getString(
+                    R.string.calendar_diagnostics_stored_trigger,
+                    formatDateTime(alarm.triggerAtMillis)
+                )
+            } else {
+                context.getString(R.string.calendar_diagnostics_no_stored_trigger)
+            },
+            state = listOf(
+                context.getString(R.string.calendar_diagnostics_marker_removed_short),
+                recordState
+            ).joinToString(SEPARATOR)
+        )
+        parent.addView(itemBinding.root)
+    }
+
+    private fun bindEventAlarmStatus(
+        binding: ItemCalendarDiagnosticsEventAlarmStatusBinding,
+        title: String,
+        trigger: String,
+        state: String,
+    ) = binding.apply {
+        calendarDiagnosticsEventAlarmStatusTitle.apply {
+            text = title
+            setTextColor(textColor)
+        }
+        calendarDiagnosticsEventAlarmStatusTrigger.apply {
+            text = trigger
+            setTextColor(textColor)
+        }
+        calendarDiagnosticsEventAlarmStatusState.apply {
+            text = state
+            setTextColor(primaryColor)
+        }
+        calendarDiagnosticsEventAlarmStatusDivider.setBackgroundColor(textColor)
+    }
+
+    private fun buildAlarmRecordState(
+        diagnostics: List<CalendarAlarmDiagnostic>,
+        capturedAtMillis: Long,
+        disposition: CalendarMarkerDisposition?,
+    ): String {
+        val active = diagnostics.count { diagnostic ->
+            diagnostic.alarm.isEnabled &&
+                diagnostic.alarm.oneShot &&
+                diagnostic.alarm.triggerAtMillis > capturedAtMillis
+        }
+        val passed = diagnostics.count { diagnostic ->
+            diagnostic.alarm.triggerAtMillis > 0L &&
+                diagnostic.alarm.triggerAtMillis <= capturedAtMillis
+        }
+        val disabled = diagnostics.count { !it.alarm.isEnabled }
+        return buildList {
+            add(
+                context.resources.getQuantityString(
+                    R.plurals.calendar_diagnostics_event_detail_created_count,
+                    diagnostics.size,
+                    diagnostics.size
+                )
+            )
+            if (active > 0) {
+                add(
+                    context.resources.getQuantityString(
+                        R.plurals.calendar_diagnostics_event_detail_active_count,
+                        active,
+                        active
+                    )
+                )
+            }
+            if (passed > 0) {
+                add(
+                    context.resources.getQuantityString(
+                        R.plurals.calendar_diagnostics_event_detail_passed_count,
+                        passed,
+                        passed
+                    )
+                )
+            }
+            if (disabled > 0) {
+                add(
+                    context.resources.getQuantityString(
+                        R.plurals.calendar_diagnostics_event_detail_disabled_count,
+                        disabled,
+                        disabled
+                    )
+                )
+            }
+            if (
+                disposition != null &&
+                disposition != CalendarMarkerDisposition.ELIGIBLE
+            ) {
+                add(context.getString(disposition.labelResource()))
+            }
+            if (diagnostics.any { it.linkStatus == CalendarAlarmLinkStatus.METADATA_DRIFT }) {
+                add(context.getString(R.string.calendar_diagnostics_link_drift))
+            }
+            if (diagnostics.any { it.hasDuplicateKey }) {
+                add(context.getString(R.string.calendar_diagnostics_duplicate_short))
+            }
+        }.joinToString(SEPARATOR)
     }
 
     private inner class AlarmViewHolder(
@@ -744,6 +1028,26 @@ class CalendarDiagnosticsAdapter(
         return if (start == end) start else "$start – $end"
     }
 
+    private fun formatEventFlags(event: CalendarEventDiagnostic): String {
+        return buildList {
+            add(
+                context.getString(
+                    if (event.isInDisplayWindow) {
+                        R.string.calendar_diagnostics_in_window
+                    } else {
+                        R.string.calendar_diagnostics_outside_window
+                    }
+                )
+            )
+            if (event.isAllDay) {
+                add(context.getString(R.string.calendar_diagnostics_all_day))
+            }
+            if (event.isCanceled) {
+                add(context.getString(R.string.calendar_diagnostics_canceled))
+            }
+        }.joinToString(SEPARATOR)
+    }
+
     private fun formatOffset(offsetMinutes: Int): String {
         return when {
             offsetMinutes < 0 -> context.getString(
@@ -825,6 +1129,28 @@ class CalendarDiagnosticsAdapter(
 
             CalendarAlarmLinkStatus.UNVERIFIABLE ->
                 R.string.calendar_diagnostics_link_unverifiable
+        }
+    }
+
+    private fun CalendarMarkerDisposition.labelResource(): Int {
+        return when (this) {
+            CalendarMarkerDisposition.ELIGIBLE ->
+                R.string.calendar_diagnostics_disposition_eligible
+
+            CalendarMarkerDisposition.ALL_DAY_EVENT ->
+                R.string.calendar_diagnostics_disposition_all_day
+
+            CalendarMarkerDisposition.CANCELED_EVENT ->
+                R.string.calendar_diagnostics_disposition_canceled
+
+            CalendarMarkerDisposition.UNSUPPORTED_OFFSET ->
+                R.string.calendar_diagnostics_disposition_unsupported
+
+            CalendarMarkerDisposition.TRIGGER_NOT_FUTURE ->
+                R.string.calendar_diagnostics_disposition_past
+
+            CalendarMarkerDisposition.TRIGGER_AFTER_WINDOW ->
+                R.string.calendar_diagnostics_disposition_after_window
         }
     }
 

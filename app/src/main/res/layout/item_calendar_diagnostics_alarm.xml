@@ -9,17 +9,17 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="66dp"
+        android:minHeight="50dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingVertical="@dimen/small_margin">
+        android:paddingVertical="2dp">
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/calendar_diagnostics_alarm_color"
-            android:layout_width="12dp"
-            android:layout_height="12dp"
-            android:layout_marginEnd="@dimen/normal_margin"
-            app:cardCornerRadius="6dp"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_marginEnd="@dimen/small_margin"
+            app:cardCornerRadius="5dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/color_primary"
             app:strokeWidth="1dp" />
@@ -50,7 +50,7 @@
                     android:id="@+id/calendar_diagnostics_alarm_trigger"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/normal_margin"
+                    android:layout_marginStart="@dimen/small_margin"
                     android:maxLines="1"
                     android:textStyle="bold"
                     tools:text="14:00" />
@@ -64,14 +64,13 @@
                 android:alpha="0.7"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:paddingTop="@dimen/tiny_margin"
                 tools:text="Jul 23 · 1 h before · event at 15:00" />
 
             <org.fossify.commons.views.MyTextView
                 android:id="@+id/calendar_diagnostics_alarm_warning"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingTop="@dimen/small_margin"
+                android:paddingTop="2dp"
                 android:textStyle="bold"
                 android:visibility="gone"
                 tools:text="Calendar event not found"

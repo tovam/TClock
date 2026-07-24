@@ -41,15 +41,84 @@ class CalendarDiagnosticsBuilderTest {
                 .map { it.key.offsetMinutes }
         )
         assertEquals(
+            2,
+            snapshot.events.first { it.key.eventId == 1L }.markerDeclarationCount
+        )
+        assertEquals(
+            2,
+            snapshot.events.first { it.key.eventId == 1L }.parsedMarkerCount
+        )
+        assertEquals(
             CalendarMarkerParseState.NONE,
             snapshot.events.first { it.key.eventId == 2L }.markerParseState
+        )
+        assertEquals(
+            0,
+            snapshot.events.first { it.key.eventId == 2L }.markerDeclarationCount
         )
         assertEquals(
             CalendarMarkerParseState.INVALID_MENTION,
             snapshot.events.first { it.key.eventId == 3L }.markerParseState
         )
+        assertEquals(
+            1,
+            snapshot.events.first { it.key.eventId == 3L }.markerDeclarationCount
+        )
+        assertEquals(
+            0,
+            snapshot.events.first { it.key.eventId == 3L }.parsedMarkerCount
+        )
         assertEquals(2, snapshot.counts.eligibleMarkersWithoutAlarm)
         assertEquals(1, snapshot.counts.invalidMarkerEvents)
+    }
+
+    @Test
+    fun eventAlarmSummarySeparatesCurrentAlarmStates() {
+        val record = event(
+            eventId = 4L,
+            beginMillis = now + hours(4),
+            description = "alarm:30min alarms:30m ALARM:1h ALARMS:later"
+        )
+        val activeKey = CalendarAlarmKey(
+            occurrence = CalendarOccurrenceKey(record.eventId, record.beginMillis),
+            offsetMinutes = -30
+        ).persistedValue
+        val staleKey = "${record.eventId}:${record.beginMillis}:-15"
+        val active = alarm(
+            id = 40,
+            key = activeKey,
+            eventId = record.eventId,
+            eventStartMillis = record.beginMillis,
+            offsetMinutes = -30,
+            triggerAtMillis = record.beginMillis - minutes(30)
+        )
+        val passed = alarm(
+            id = 41,
+            key = staleKey,
+            eventId = record.eventId,
+            eventStartMillis = record.beginMillis,
+            offsetMinutes = -15,
+            triggerAtMillis = now - minutes(5)
+        )
+
+        val diagnostic = build(
+            records = listOf(record),
+            alarms = listOf(active, passed)
+        ).events.single()
+        val summary = diagnostic.alarmSummary(now)
+
+        assertEquals(CalendarMarkerParseState.INVALID_MENTION, diagnostic.markerParseState)
+        assertEquals(
+            CalendarEventAlarmSummary(
+                declarations = 4,
+                parsed = 3,
+                created = 2,
+                active = 1,
+                passed = 1,
+                notCreated = 1
+            ),
+            summary
+        )
     }
 
     @Test
