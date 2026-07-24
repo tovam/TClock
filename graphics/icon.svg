@@ -3,32 +3,23 @@
     width="512"
     height="512"
     viewBox="0 0 512 512">
-    <title>TClock calendar alarm logo</title>
+    <title>ClockT logo</title>
 
     <circle cx="256" cy="256" r="252" fill="#106D20" />
 
-    <g fill="#263238">
-        <rect x="108" y="140" width="296" height="272" rx="44" />
-        <rect x="168" y="100" width="52" height="90" rx="26" />
-        <rect x="292" y="100" width="52" height="90" rx="26" />
-    </g>
-
-    <g fill="#FFFFFF">
-        <rect x="124" y="154" width="264" height="242" rx="30" />
-        <rect x="182" y="108" width="24" height="76" rx="12" />
-        <rect x="306" y="108" width="24" height="76" rx="12" />
-    </g>
-
-    <g fill="#263238">
-        <rect x="124" y="194" width="264" height="26" />
-        <circle cx="256" cy="298" r="86" />
-    </g>
+    <circle
+        cx="256"
+        cy="256"
+        r="140"
+        fill="none"
+        stroke="#FFFFFF"
+        stroke-width="32" />
 
     <path
-        d="M256 298V234M256 298L306 340"
+        d="M256 256V184M256 256L312 312"
         fill="none"
         stroke="#FFFFFF"
         stroke-linecap="round"
         stroke-linejoin="round"
-        stroke-width="30" />
+        stroke-width="32" />
 </svg>

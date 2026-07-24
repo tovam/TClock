@@ -4,21 +4,12 @@
     android:viewportWidth="512"
     android:viewportHeight="512">
 
-    <!-- Alpha-only mask used by Android themed icons. -->
+    <!-- The themed icon uses the exact same white alpha mask. -->
     <path
         android:fillColor="@android:color/transparent"
-        android:pathData="M154,154H358A30,30 0,0 1,388 184V366A30,30 0,0 1,358 396H154A30,30 0,0 1,124 366V184A30,30 0,0 1,154 154Z"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineJoin="round"
-        android:strokeWidth="28" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M194,106A14,14 0,0 1,208 120V184H180V120A14,14 0,0 1,194 106ZM318,106A14,14 0,0 1,332 120V184H304V120A14,14 0,0 1,318 106Z" />
-    <path
-        android:fillColor="@android:color/transparent"
-        android:pathData="M126,210H386M256,222A72,72 0,1 1,256 366A72,72 0,1 1,256 222ZM256,294V246M256,294L298,330"
+        android:pathData="M256,116A140,140 0,1 1,256 396A140,140 0,1 1,256 116ZM256,256V184M256,256L312,312"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:strokeWidth="26" />
+        android:strokeWidth="32" />
 </vector>

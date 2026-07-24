@@ -4,33 +4,12 @@
     android:viewportWidth="512"
     android:viewportHeight="512">
 
-    <!-- Dark keyline keeps the glyph visible on every selectable icon color. -->
-    <path
-        android:fillColor="#263238"
-        android:pathData="M152,140H360A44,44 0,0 1,404 184V368A44,44 0,0 1,360 412H152A44,44 0,0 1,108 368V184A44,44 0,0 1,152 140Z" />
-    <path
-        android:fillColor="#263238"
-        android:pathData="M194,100A26,26 0,0 1,220 126V190H168V126A26,26 0,0 1,194 100ZM318,100A26,26 0,0 1,344 126V190H292V126A26,26 0,0 1,318 100Z" />
-
-    <!-- White calendar page. -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M154,154H358A30,30 0,0 1,388 184V366A30,30 0,0 1,358 396H154A30,30 0,0 1,124 366V184A30,30 0,0 1,154 154Z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M194,108A12,12 0,0 1,206 120V184H182V120A12,12 0,0 1,194 108ZM318,108A12,12 0,0 1,330 120V184H306V120A12,12 0,0 1,318 108Z" />
-
-    <!-- Calendar divider and clock face. -->
-    <path
-        android:fillColor="#263238"
-        android:pathData="M124,194H388V220H124ZM256,212A86,86 0,1 1,256 384A86,86 0,1 1,256 212Z" />
-
-    <!-- Simple, heavy hands remain legible in small launchers. -->
+    <!-- Minimal transparent clock, close to the original Fossify icon. -->
     <path
         android:fillColor="@android:color/transparent"
-        android:pathData="M256,298V234M256,298L306,340"
+        android:pathData="M256,116A140,140 0,1 1,256 396A140,140 0,1 1,256 116ZM256,256V184M256,256L312,312"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:strokeWidth="30" />
+        android:strokeWidth="32" />
 </vector>
