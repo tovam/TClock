@@ -129,6 +129,7 @@
     <string name="calendar_diagnostics_disposition_unsupported">Ignored because the delay exceeds the supported ±15 days</string>
     <string name="calendar_diagnostics_disposition_past">Not scheduled because the trigger is no longer in the future</string>
     <string name="calendar_diagnostics_disposition_after_window">Not scheduled yet because the trigger is beyond the next 15 days</string>
+    <string name="calendar_diagnostics_disposition_cl1_mirror">Handled by the linked source event; no duplicate alarm is scheduled for this CL1 copy</string>
     <string name="calendar_diagnostics_alarm_title">Alarm #%1$d · %2$s</string>
     <string name="calendar_diagnostics_stored_trigger">Stored trigger: %1$s</string>
     <string name="calendar_diagnostics_no_stored_trigger">No stored trigger time</string>

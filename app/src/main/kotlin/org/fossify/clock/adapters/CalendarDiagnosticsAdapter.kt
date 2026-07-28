@@ -1151,6 +1151,9 @@ class CalendarDiagnosticsAdapter(
 
             CalendarMarkerDisposition.TRIGGER_AFTER_WINDOW ->
                 R.string.calendar_diagnostics_disposition_after_window
+
+            CalendarMarkerDisposition.SUPPRESSED_CL1_MIRROR ->
+                R.string.calendar_diagnostics_disposition_cl1_mirror
         }
     }
 

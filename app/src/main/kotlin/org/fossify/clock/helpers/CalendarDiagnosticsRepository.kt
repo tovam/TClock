@@ -5,6 +5,7 @@ import android.content.Context
 import android.provider.CalendarContract
 import android.util.Log
 import org.fossify.clock.R
+import org.fossify.clock.cl1.engine.Cl1AppSnapshot
 import org.fossify.clock.extensions.dbHelper
 
 internal object CalendarDiagnosticsRepository {
@@ -12,6 +13,7 @@ internal object CalendarDiagnosticsRepository {
     fun load(
         context: Context,
         capturedAtMillis: Long = System.currentTimeMillis(),
+        cl1: Cl1AppSnapshot? = null,
     ): CalendarDiagnosticsSnapshot {
         val window = CalendarAlarmWindow.rangeAt(capturedAtMillis)
         val alarms = context.dbHelper.getCalendarAlarms()
@@ -22,7 +24,8 @@ internal object CalendarDiagnosticsRepository {
                 providerState = CalendarDiagnosticsProviderState.PERMISSION_MISSING,
                 records = emptyList(),
                 alarms = alarms,
-                untitledEventLabel = context.getString(R.string.calendar_untitled_event)
+                untitledEventLabel = context.getString(R.string.calendar_untitled_event),
+                cl1 = cl1
             )
         }
 
@@ -45,7 +48,8 @@ internal object CalendarDiagnosticsRepository {
                 providerState = state,
                 records = emptyList(),
                 alarms = alarms,
-                untitledEventLabel = context.getString(R.string.calendar_untitled_event)
+                untitledEventLabel = context.getString(R.string.calendar_untitled_event),
+                cl1 = cl1
             )
         } catch (exception: Exception) {
             Log.e(TAG, "Calendar diagnostics query failed", exception)
@@ -55,7 +59,8 @@ internal object CalendarDiagnosticsRepository {
                 providerState = CalendarDiagnosticsProviderState.PROVIDER_ERROR,
                 records = emptyList(),
                 alarms = alarms,
-                untitledEventLabel = context.getString(R.string.calendar_untitled_event)
+                untitledEventLabel = context.getString(R.string.calendar_untitled_event),
+                cl1 = cl1
             )
         }
 
@@ -65,7 +70,8 @@ internal object CalendarDiagnosticsRepository {
             providerState = CalendarDiagnosticsProviderState.AVAILABLE,
             records = records,
             alarms = alarms,
-            untitledEventLabel = context.getString(R.string.calendar_untitled_event)
+            untitledEventLabel = context.getString(R.string.calendar_untitled_event),
+            cl1 = cl1
         )
     }
 

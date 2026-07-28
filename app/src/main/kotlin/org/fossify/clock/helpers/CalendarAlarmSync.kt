@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.content.ContextCompat
 import org.fossify.clock.R
+import org.fossify.clock.cl1.engine.AndroidCl1Coordinator
+import org.fossify.clock.cl1.provider.Cl1EventRef
 import org.fossify.clock.extensions.cancelAlarmClock
 import org.fossify.clock.extensions.createNewAlarm
 import org.fossify.clock.extensions.dbHelper
@@ -45,8 +47,29 @@ object CalendarAlarmSync {
             PackageManager.PERMISSION_GRANTED
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun loadDiagnostics(context: Context): CalendarDiagnosticsSnapshot = synchronized(lock) {
-        CalendarDiagnosticsRepository.load(context)
+        val capturedAtMillis = System.currentTimeMillis()
+        val window = CalendarAlarmWindow.rangeAt(capturedAtMillis)
+        val cl1 = if (hasCalendarPermission(context)) {
+            try {
+                AndroidCl1Coordinator.from(context).scan(
+                    beginMillis = window.queryBeginMillis,
+                    endMillis = window.queryEndMillis,
+                    capturedAtMillis = capturedAtMillis
+                )
+            } catch (exception: Exception) {
+                Log.e(TAG, "CL1 diagnostics scan failed", exception)
+                null
+            }
+        } else {
+            null
+        }
+        CalendarDiagnosticsRepository.load(
+            context = context,
+            capturedAtMillis = capturedAtMillis,
+            cl1 = cl1
+        )
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -65,12 +88,18 @@ object CalendarAlarmSync {
         val db = context.dbHelper
         val existingAlarms = db.getCalendarAlarms()
         val candidates = try {
+            val cl1 = AndroidCl1Coordinator.from(context).synchronize(
+                beginMillis = window.queryBeginMillis,
+                endMillis = window.queryEndMillis,
+                capturedAtMillis = now
+            )
             readCandidates(
                 context = context,
                 queryBeginMillis = window.queryBeginMillis,
                 queryEndMillis = window.queryEndMillis,
                 triggerBeginMillis = window.triggerBeginMillis,
-                triggerEndMillis = window.triggerEndMillis
+                triggerEndMillis = window.triggerEndMillis,
+                suppressedMirrorEvents = cl1.discovery.mirrorAlarmSuppressions
             )
         } catch (exception: SecurityException) {
             Log.e(TAG, "Calendar permission was lost during synchronization", exception)
@@ -193,6 +222,7 @@ object CalendarAlarmSync {
         queryEndMillis: Long,
         triggerBeginMillis: Long,
         triggerEndMillis: Long,
+        suppressedMirrorEvents: Set<Cl1EventRef>,
     ): Map<String, Candidate> {
         val result = LinkedHashMap<String, Candidate>()
         val records = CalendarDiagnosticsRepository.readVisibleInstances(
@@ -204,8 +234,13 @@ object CalendarAlarmSync {
             if (record.isAllDay || record.isCanceled) {
                 return@recordLoop
             }
+            if (record.cl1EventRef in suppressedMirrorEvents) {
+                return@recordLoop
+            }
 
-            val offsets = TClockPatternParser.parseOffsets(record.description)
+            val offsets = TClockPatternParser.parseOffsets(
+                alarmPatternDescription(record.description)
+            )
             val title = record.title?.takeIf { it.isNotBlank() }
                 ?: context.getString(R.string.calendar_untitled_event)
             offsets.forEach offsetLoop@{ offsetMinutes ->

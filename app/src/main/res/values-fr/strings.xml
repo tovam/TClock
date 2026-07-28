@@ -147,6 +147,7 @@
     <string name="calendar_diagnostics_disposition_unsupported">Ignoré car le délai dépasse la limite prise en charge de ±15 jours</string>
     <string name="calendar_diagnostics_disposition_past">Non programmé car le déclenchement n’est plus dans le futur</string>
     <string name="calendar_diagnostics_disposition_after_window">Pas encore programmé car le déclenchement dépasse les 15 prochains jours</string>
+    <string name="calendar_diagnostics_disposition_cl1_mirror">Géré par l’événement source lié ; aucune alarme en double n’est programmée pour cette copie CL1</string>
     <string name="calendar_diagnostics_alarm_title">Alarme nº %1$d · %2$s</string>
     <string name="calendar_diagnostics_stored_trigger">Déclenchement enregistré : %1$s</string>
     <string name="calendar_diagnostics_no_stored_trigger">Aucune heure de déclenchement enregistrée</string>

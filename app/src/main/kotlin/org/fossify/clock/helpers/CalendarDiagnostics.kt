@@ -1,5 +1,7 @@
 package org.fossify.clock.helpers
 
+import org.fossify.clock.cl1.engine.Cl1AppSnapshot
+import org.fossify.clock.cl1.provider.Cl1EventRef
 import org.fossify.clock.models.Alarm
 import java.util.concurrent.TimeUnit
 
@@ -35,6 +37,7 @@ enum class CalendarMarkerDisposition {
     UNSUPPORTED_OFFSET,
     TRIGGER_NOT_FUTURE,
     TRIGGER_AFTER_WINDOW,
+    SUPPRESSED_CL1_MIRROR,
 }
 
 enum class CalendarAlarmLinkStatus {
@@ -146,6 +149,7 @@ data class CalendarDiagnosticsSnapshot(
     val events: List<CalendarEventDiagnostic>,
     val unlinkedAlarms: List<CalendarAlarmDiagnostic>,
     val counts: CalendarDiagnosticsCounts,
+    val cl1: Cl1AppSnapshot? = null,
 )
 
 internal data class CalendarEventRecord(
@@ -169,6 +173,7 @@ internal object CalendarDiagnosticsBuilder {
         records: List<CalendarEventRecord>,
         alarms: List<Alarm>,
         untitledEventLabel: String,
+        cl1: Cl1AppSnapshot? = null,
     ): CalendarDiagnosticsSnapshot {
         val duplicateKeys = alarms
             .filter { it.calendarKey.isNotBlank() }
@@ -182,7 +187,8 @@ internal object CalendarDiagnosticsBuilder {
                 window = window,
                 providerState = providerState,
                 alarms = alarms,
-                duplicateKeys = duplicateKeys
+                duplicateKeys = duplicateKeys,
+                cl1 = cl1
             )
         }
 
@@ -192,7 +198,8 @@ internal object CalendarDiagnosticsBuilder {
             records = records,
             alarms = alarms,
             untitledEventLabel = untitledEventLabel,
-            duplicateKeys = duplicateKeys
+            duplicateKeys = duplicateKeys,
+            cl1 = cl1
         )
     }
 
@@ -202,6 +209,7 @@ internal object CalendarDiagnosticsBuilder {
         providerState: CalendarDiagnosticsProviderState,
         alarms: List<Alarm>,
         duplicateKeys: Set<String>,
+        cl1: Cl1AppSnapshot?,
     ): CalendarDiagnosticsSnapshot {
         val unverifiableAlarms = alarms
             .map { alarm ->
@@ -218,7 +226,8 @@ internal object CalendarDiagnosticsBuilder {
             providerState = providerState,
             events = emptyList(),
             unlinkedAlarms = unverifiableAlarms,
-            totalAlarmCount = alarms.size
+            totalAlarmCount = alarms.size,
+            cl1 = cl1
         )
     }
 
@@ -229,6 +238,7 @@ internal object CalendarDiagnosticsBuilder {
         alarms: List<Alarm>,
         untitledEventLabel: String,
         duplicateKeys: Set<String>,
+        cl1: Cl1AppSnapshot?,
     ): CalendarDiagnosticsSnapshot {
         val alarmsByKey = alarms.groupBy { it.calendarKey }
         val recordsByOccurrence = records
@@ -243,7 +253,9 @@ internal object CalendarDiagnosticsBuilder {
                 alarmsByKey = alarmsByKey,
                 duplicateKeys = duplicateKeys,
                 matchedAlarmIds = matchedAlarmIds,
-                untitledEventLabel = untitledEventLabel
+                untitledEventLabel = untitledEventLabel,
+                suppressedMirrorEvents =
+                    cl1?.discovery?.mirrorAlarmSuppressions.orEmpty()
             )
         }
         val (eventsWithMissingMarkers, eventMissingAlarms) = attachUnmatchedAlarms(
@@ -262,7 +274,8 @@ internal object CalendarDiagnosticsBuilder {
             providerState = CalendarDiagnosticsProviderState.AVAILABLE,
             events = includedEvents,
             unlinkedAlarms = eventMissingAlarms.sortedWith(alarmDiagnosticComparator),
-            totalAlarmCount = alarms.size
+            totalAlarmCount = alarms.size,
+            cl1 = cl1
         )
     }
 
@@ -274,9 +287,12 @@ internal object CalendarDiagnosticsBuilder {
         duplicateKeys: Set<String>,
         matchedAlarmIds: MutableSet<Int>,
         untitledEventLabel: String,
+        suppressedMirrorEvents: Set<Cl1EventRef>,
     ): CalendarEventDiagnostic {
         val title = record.title?.takeIf { it.isNotBlank() } ?: untitledEventLabel
-        val parseResult = TClockPatternParser.parse(record.description)
+        val alarmDescription = alarmPatternDescription(record.description)
+        val parseResult = TClockPatternParser.parse(alarmDescription)
+        val isSuppressedMirror = record.cl1EventRef in suppressedMirrorEvents
         val markers = parseResult.offsets
             .map { offsetMinutes ->
                 buildMarkerDiagnostic(
@@ -287,7 +303,8 @@ internal object CalendarDiagnosticsBuilder {
                     window = window,
                     alarmsByKey = alarmsByKey,
                     duplicateKeys = duplicateKeys,
-                    matchedAlarmIds = matchedAlarmIds
+                    matchedAlarmIds = matchedAlarmIds,
+                    isSuppressedMirror = isSuppressedMirror
                 )
             }
             .sortedWith(markerDiagnosticComparator)
@@ -297,7 +314,7 @@ internal object CalendarDiagnosticsBuilder {
             calendarDisplayName = record.calendarDisplayName,
             displayColor = record.displayColor,
             title = title,
-            description = record.description,
+            description = alarmDescription,
             beginMillis = record.beginMillis,
             endMillis = record.endMillis,
             isAllDay = record.isAllDay,
@@ -320,6 +337,7 @@ internal object CalendarDiagnosticsBuilder {
         alarmsByKey: Map<String, List<Alarm>>,
         duplicateKeys: Set<String>,
         matchedAlarmIds: MutableSet<Int>,
+        isSuppressedMirror: Boolean,
     ): CalendarMarkerDiagnostic {
         val markerKey = CalendarAlarmKey(occurrenceKey, offsetMinutes)
         val triggerAtMillis = record.beginMillis +
@@ -333,7 +351,8 @@ internal object CalendarDiagnosticsBuilder {
                 record = record,
                 offsetMinutes = offsetMinutes,
                 triggerAtMillis = triggerAtMillis,
-                window = window
+                window = window,
+                isSuppressedMirror = isSuppressedMirror
             ),
             alarms = linkedAlarms
                 .map { alarm ->
@@ -404,6 +423,7 @@ internal object CalendarDiagnosticsBuilder {
         offsetMinutes: Int,
         triggerAtMillis: Long,
         window: CalendarAlarmWindow.Range,
+        isSuppressedMirror: Boolean,
     ): CalendarMarkerDisposition {
         return when {
             record.isAllDay -> CalendarMarkerDisposition.ALL_DAY_EVENT
@@ -414,6 +434,7 @@ internal object CalendarDiagnosticsBuilder {
                 CalendarMarkerDisposition.TRIGGER_NOT_FUTURE
             triggerAtMillis > window.triggerEndMillis ->
                 CalendarMarkerDisposition.TRIGGER_AFTER_WINDOW
+            isSuppressedMirror -> CalendarMarkerDisposition.SUPPRESSED_CL1_MIRROR
             else -> CalendarMarkerDisposition.ELIGIBLE
         }
     }
@@ -489,6 +510,7 @@ internal object CalendarDiagnosticsBuilder {
         events: List<CalendarEventDiagnostic>,
         unlinkedAlarms: List<CalendarAlarmDiagnostic>,
         totalAlarmCount: Int,
+        cl1: Cl1AppSnapshot? = null,
     ): CalendarDiagnosticsSnapshot {
         val allAlarmDiagnostics = events.flatMap { it.alarms } + unlinkedAlarms
         return CalendarDiagnosticsSnapshot(
@@ -500,6 +522,7 @@ internal object CalendarDiagnosticsBuilder {
             providerState = providerState,
             events = events,
             unlinkedAlarms = unlinkedAlarms,
+            cl1 = cl1,
             counts = CalendarDiagnosticsCounts(
                 displayWindowEvents = events.count { it.isInDisplayWindow },
                 relatedEventsOutsideWindow = events.count { !it.isInDisplayWindow },
