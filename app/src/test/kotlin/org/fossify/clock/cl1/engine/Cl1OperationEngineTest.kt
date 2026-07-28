@@ -266,6 +266,28 @@ class Cl1OperationEngineTest {
     }
 
     @Test
+    fun `creation resumes after a lost mirror update response and another source edit`() {
+        val adapter = MemoryCalendarAdapter(
+            sourceTitleAfterCreate = "Edited during creation",
+            lostFirstMirrorUpdateResponse = true
+        )
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+
+        assertTrue(
+            engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF) is
+                Cl1OperationResult.Pending
+        )
+        adapter.editSourceTitle("Edited after the lost response")
+
+        assertTrue(engine.resumePending().single() is Cl1OperationResult.Completed)
+        val active = Cl1Discovery.build(adapter.allEvents()).relations.single()
+        assertEquals(Cl1RelationState.ACTIVE, active.state)
+        assertEquals("Edited after the lost response", active.mirror?.title)
+        assertTrue(storage.listPendingOperations().isEmpty())
+    }
+
+    @Test
     fun `repair replaces the old record only after the new mirror is verified`() {
         val adapter = MemoryCalendarAdapter()
         val storage = MemoryStorage()
@@ -528,6 +550,7 @@ class Cl1OperationEngineTest {
         private val forgetCreateTokenAfterLostResponse: Boolean = false,
         private var lostFirstDeleteResponse: Boolean = false,
         private var lostFirstSourceUpdateResponse: Boolean = false,
+        private var lostFirstMirrorUpdateResponse: Boolean = false,
     ) : Cl1CalendarAdapter {
         private val sourceCalendar = calendar(SOURCE_CALENDAR_ID)
         private val mirrorCalendar = calendar(MIRROR_CALENDAR_ID)
@@ -709,6 +732,12 @@ class Cl1OperationEngineTest {
             ) {
                 lostFirstSourceUpdateResponse = false
                 Cl1MutationResult.Failed("lostSourceUpdateResponse")
+            } else if (
+                expected.ref.calendarId == MIRROR_CALENDAR_ID &&
+                lostFirstMirrorUpdateResponse
+            ) {
+                lostFirstMirrorUpdateResponse = false
+                Cl1MutationResult.Failed("lostMirrorUpdateResponse")
             } else {
                 Cl1MutationResult.Applied(updated)
             }

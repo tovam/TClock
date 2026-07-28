@@ -418,11 +418,11 @@ class Cl1OperationEngine(
             val payloadMatches = owned.payload == desired.payload
 
             if (!canonicalMatches || !payloadMatches) {
-                val baseline = journal.appliedRevisionHex?.let(Cl1Bytes::fromHex)
-                    ?: owned.payload.revision
                 val safeToUpdate = canonicalMatches ||
-                    Cl1Crypto.constantTimeEquals(actualRevision, baseline) &&
-                    Cl1Crypto.constantTimeEquals(owned.payload.revision, baseline)
+                    Cl1Crypto.constantTimeEquals(
+                        actualRevision,
+                        owned.payload.revision
+                    )
                 if (!safeToUpdate) {
                     return conflict(
                         operation,
