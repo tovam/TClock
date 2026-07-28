@@ -1,6 +1,7 @@
 package org.fossify.clock.cl1.engine
 
 import kotlinx.serialization.Serializable
+import org.fossify.clock.cl1.Cl1CanonicalEvent
 import org.fossify.clock.cl1.Cl1DurationOverride
 import org.fossify.clock.cl1.Cl1TitleOverride
 import org.fossify.clock.cl1.provider.Cl1CalendarRef
@@ -10,6 +11,16 @@ data class Cl1MirrorOverrides(
     val title: Cl1TitleOverride = Cl1TitleOverride.Inherited,
     val startOffsetSeconds: Long? = null,
     val duration: Cl1DurationOverride = Cl1DurationOverride.Inherited,
+)
+
+enum class Cl1DurationConversion {
+    FIXED,
+    DELTA,
+}
+
+data class Cl1OverrideConversion(
+    val titleOverride: Cl1TitleOverride? = null,
+    val durationMode: Cl1DurationConversion? = null,
 )
 
 sealed interface Cl1OperationResult {
@@ -79,10 +90,90 @@ internal data class Cl1SyncJournal(
     val mirror: Cl1EventRefDto,
 )
 
+@Serializable
+internal data class Cl1PairJournal(
+    val slotHex: String,
+    val source: Cl1EventRefDto,
+    val mirror: Cl1EventRefDto,
+    val expectedRevisionHex: String,
+    val actualRevisionHex: String,
+)
+
+@Serializable
+internal data class Cl1ApplyCopyJournal(
+    val pair: Cl1PairJournal,
+    val target: Cl1CanonicalEventDto,
+)
+
+@Serializable
+internal data class Cl1ConvertJournal(
+    val pair: Cl1PairJournal,
+    val titleMode: String,
+    val titleValue: String? = null,
+    val startOffsetSeconds: Long?,
+    val durationMode: String,
+    val durationValue: String? = null,
+) {
+    companion object {
+    }
+}
+
+@Serializable
+internal data class Cl1UnlinkJournal(
+    val slotHex: String,
+    val secretHex: String,
+    val source: Cl1EventRefDto,
+    val mirror: Cl1EventRefDto,
+)
+
+@Serializable
+internal data class Cl1CanonicalEventDto(
+    val title: String,
+    val startUnixSeconds: Long,
+    val endUnixSeconds: Long,
+    val startIanaTimeZone: String,
+    val endIanaTimeZone: String,
+    val location: String,
+    val userDescription: String,
+    val userUrl: String,
+) {
+    fun toDomain(): Cl1CanonicalEvent {
+        return Cl1CanonicalEvent.fromSeconds(
+            title = title,
+            startUnixSeconds = startUnixSeconds,
+            endUnixSeconds = endUnixSeconds,
+            startIanaTimeZone = startIanaTimeZone,
+            endIanaTimeZone = endIanaTimeZone,
+            location = location,
+            userDescription = userDescription,
+            userUrl = userUrl
+        )
+    }
+
+    companion object {
+        fun from(value: Cl1CanonicalEvent): Cl1CanonicalEventDto {
+            return Cl1CanonicalEventDto(
+                title = value.title,
+                startUnixSeconds = value.startUnixSeconds,
+                endUnixSeconds = value.endUnixSeconds,
+                startIanaTimeZone = value.startIanaTimeZone,
+                endIanaTimeZone = value.endIanaTimeZone,
+                location = value.location,
+                userDescription = value.userDescription,
+                userUrl = value.userUrl
+            )
+        }
+    }
+}
+
 internal object Cl1OperationTypes {
     const val CREATE = "create"
     const val REPAIR = "repair"
     const val SYNC = "sync"
+    const val RESTORE = "restore"
+    const val APPLY_COPY = "applyCopy"
+    const val CONVERT_OVERRIDES = "convertOverrides"
+    const val UNLINK = "unlink"
 }
 
 internal object Cl1CreatePhases {
@@ -96,5 +187,14 @@ internal object Cl1CreatePhases {
 internal object Cl1SyncPhases {
     const val PREPARED = "prepared"
     const val APPLYING = "applying"
+    const val CONFLICT = "conflict"
+}
+
+internal object Cl1ResolutionPhases {
+    const val PREPARED = "prepared"
+    const val APPLYING = "applying"
+    const val SOURCE_DETACHED = "sourceDetached"
+    const val SOURCE_APPLIED = "sourceApplied"
+    const val MIRROR_APPLYING = "mirrorApplying"
     const val CONFLICT = "conflict"
 }

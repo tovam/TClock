@@ -38,6 +38,13 @@ class Cl1OperationEngine(
     private val domainToAscii: Cl1DomainToAscii = Cl1JdkDomainToAscii,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
+    private val resolutions = Cl1ResolutionEngine(
+        adapter = adapter,
+        storage = storage,
+        domainToAscii = domainToAscii,
+        nowMillis = nowMillis
+    )
+
     fun createRelation(
         sourceRef: Cl1EventRef,
         destinationRef: Cl1CalendarRef,
@@ -134,10 +141,26 @@ class Cl1OperationEngine(
         return storage.listPendingOperations().map(::resumeOperation)
     }
 
+    fun restoreFromSource(
+        relation: Cl1RelationSnapshot,
+    ): Cl1OperationResult = resolutions.restoreFromSource(relation)
+
+    fun applyCopyToSource(
+        relation: Cl1RelationSnapshot,
+    ): Cl1OperationResult = resolutions.applyCopyToSource(relation)
+
+    fun convertCopyToOverrides(
+        relation: Cl1RelationSnapshot,
+        conversion: Cl1OverrideConversion,
+    ): Cl1OperationResult = resolutions.convertToOverrides(relation, conversion)
+
+    fun unlink(
+        relation: Cl1RelationSnapshot,
+    ): Cl1OperationResult = resolutions.unlink(relation)
+
     fun reconcile(discovery: Cl1DiscoverySnapshot): List<Cl1OperationResult> {
         val pendingSlots = storage.listPendingOperations()
             .asSequence()
-            .filter { it.type == Cl1OperationTypes.SYNC }
             .mapNotNull { it.slotHex }
             .toSet()
         return discovery.relations
@@ -158,6 +181,11 @@ class Cl1OperationEngine(
             Cl1OperationTypes.REPAIR,
             -> resumeCreate(operation)
             Cl1OperationTypes.SYNC -> resumeSync(operation)
+            Cl1OperationTypes.RESTORE,
+            Cl1OperationTypes.APPLY_COPY,
+            Cl1OperationTypes.CONVERT_OVERRIDES,
+            Cl1OperationTypes.UNLINK,
+            -> resolutions.resume(operation)
             else -> Cl1OperationResult.Rejected(
                 operation.operationId,
                 "unknownOperationType"

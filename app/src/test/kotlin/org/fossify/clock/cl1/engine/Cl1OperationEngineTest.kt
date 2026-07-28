@@ -1,6 +1,9 @@
 package org.fossify.clock.cl1.engine
 
 import org.fossify.clock.cl1.Cl1CanonicalEmail
+import org.fossify.clock.cl1.Cl1Description
+import org.fossify.clock.cl1.Cl1DurationOverride
+import org.fossify.clock.cl1.Cl1TitleOverride
 import org.fossify.clock.cl1.provider.Cl1CalendarAdapter
 import org.fossify.clock.cl1.provider.Cl1CalendarCapability
 import org.fossify.clock.cl1.provider.Cl1CalendarDescriptor
@@ -101,6 +104,98 @@ class Cl1OperationEngineTest {
         assertTrue(storage.listPendingOperations().isEmpty())
     }
 
+    @Test
+    fun `copy edits can be restored converted or applied without blind overwrite`() {
+        run {
+            val adapter = MemoryCalendarAdapter()
+            val engine = Cl1OperationEngine(adapter, MemoryStorage())
+            engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF)
+            adapter.editMirror(title = "Copy edit")
+            val modified = Cl1Discovery.build(adapter.allEvents()).relations.single()
+
+            assertTrue(
+                engine.restoreFromSource(modified) is Cl1OperationResult.Completed
+            )
+            val active = Cl1Discovery.build(adapter.allEvents()).relations.single()
+            assertEquals(Cl1RelationState.ACTIVE, active.state)
+            assertEquals("Initial", active.mirror?.title)
+        }
+
+        run {
+            val adapter = MemoryCalendarAdapter()
+            val engine = Cl1OperationEngine(adapter, MemoryStorage())
+            engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF)
+            adapter.editMirror(
+                title = "Custom",
+                startDeltaMillis = 30 * 60 * 1_000L,
+                durationMillis = 2 * 60 * 1_000L
+            )
+            val modified = Cl1Discovery.build(adapter.allEvents()).relations.single()
+            val conversion = Cl1OverrideConversion(
+                titleOverride = Cl1TitleOverride.Replacement("Custom"),
+                durationMode = Cl1DurationConversion.FIXED
+            )
+
+            assertTrue(
+                engine.convertCopyToOverrides(modified, conversion) is
+                    Cl1OperationResult.Completed
+            )
+            val active = Cl1Discovery.build(adapter.allEvents()).relations.single()
+            assertEquals(Cl1RelationState.ACTIVE, active.state)
+            val payload = requireNotNull(active.mirrorPayload)
+            assertEquals(
+                Cl1TitleOverride.Replacement("Custom"),
+                payload.titleOverride
+            )
+            assertEquals(
+                Cl1DurationOverride.Fixed(120uL),
+                payload.durationOverride
+            )
+            assertEquals(30 * 60L, payload.startOffsetSeconds)
+        }
+
+        run {
+            val adapter = MemoryCalendarAdapter()
+            val engine = Cl1OperationEngine(adapter, MemoryStorage())
+            engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF)
+            adapter.editMirror(title = "Copy wins", location = "New room")
+            val modified = Cl1Discovery.build(adapter.allEvents()).relations.single()
+
+            assertTrue(
+                engine.applyCopyToSource(modified) is Cl1OperationResult.Completed
+            )
+            val active = Cl1Discovery.build(adapter.allEvents()).relations.single()
+            assertEquals(Cl1RelationState.ACTIVE, active.state)
+            assertEquals("Copy wins", active.source?.title)
+            assertEquals("New room", active.source?.location)
+            assertEquals(Cl1TitleOverride.Inherited, active.mirrorPayload?.titleOverride)
+            assertEquals(null, active.mirrorPayload?.startOffsetSeconds)
+            assertEquals(
+                Cl1DurationOverride.Inherited,
+                active.mirrorPayload?.durationOverride
+            )
+        }
+    }
+
+    @Test
+    fun `unlink removes both protocol blocks but preserves both events`() {
+        val adapter = MemoryCalendarAdapter()
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+        engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF)
+        val active = Cl1Discovery.build(adapter.allEvents()).relations.single()
+
+        val result = engine.unlink(active)
+
+        assertTrue(result is Cl1OperationResult.Completed)
+        assertEquals(2, adapter.allEvents().size)
+        assertTrue(Cl1Discovery.build(adapter.allEvents()).relations.isEmpty())
+        adapter.allEvents().forEach {
+            assertTrue(it.parsedDescription is Cl1Description.None)
+            assertEquals("notes", it.description)
+        }
+    }
+
     private class MemoryCalendarAdapter(
         private var lostFirstCreateResponse: Boolean = false,
         private val sourceTitleAfterCreate: String? = null,
@@ -127,6 +222,25 @@ class Cl1OperationEngineTest {
         fun removeMirrorEvents() {
             events.keys.filter { it.calendarId == MIRROR_CALENDAR_ID }
                 .forEach(events::remove)
+        }
+
+        fun editMirror(
+            title: String,
+            startDeltaMillis: Long = 0,
+            durationMillis: Long? = null,
+            location: String? = null,
+        ) {
+            val ref = events.keys.single { it.calendarId == MIRROR_CALENDAR_ID }
+            val current = requireNotNull(events[ref])
+            val start = current.startMillis + startDeltaMillis
+            val end = durationMillis?.let { start + it }
+                ?: requireNotNull(current.endMillis) + startDeltaMillis
+            events[ref] = current.copy(
+                title = title,
+                startMillis = start,
+                endMillis = end,
+                location = location ?: current.location
+            )
         }
 
         override fun listCalendars(): List<Cl1CalendarDescriptor> {
