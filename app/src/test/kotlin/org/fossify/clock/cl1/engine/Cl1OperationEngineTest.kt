@@ -74,6 +74,33 @@ class Cl1OperationEngineTest {
         assertEquals("Edited after commit", active.mirror?.title)
     }
 
+    @Test
+    fun `repair replaces the old record only after the new mirror is verified`() {
+        val adapter = MemoryCalendarAdapter()
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage, nowMillis = { 789L })
+        assertTrue(
+            engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF) is
+                Cl1OperationResult.Completed
+        )
+        val oldSlot = Cl1Discovery.build(adapter.allEvents())
+            .relations
+            .single()
+            .key
+            .slot
+        adapter.removeMirrorEvents()
+        val missing = Cl1Discovery.build(adapter.allEvents()).relations.single()
+        assertEquals(Cl1RelationState.MISSING_OR_INACCESSIBLE, missing.state)
+
+        val repaired = engine.repairRelation(missing, MIRROR_CALENDAR_REF)
+
+        assertTrue(repaired is Cl1OperationResult.Completed)
+        val active = Cl1Discovery.build(adapter.allEvents()).relations.single()
+        assertEquals(Cl1RelationState.ACTIVE, active.state)
+        assertTrue(active.key.slot != oldSlot)
+        assertTrue(storage.listPendingOperations().isEmpty())
+    }
+
     private class MemoryCalendarAdapter(
         private var lostFirstCreateResponse: Boolean = false,
         private val sourceTitleAfterCreate: String? = null,
@@ -95,6 +122,11 @@ class Cl1OperationEngineTest {
 
         fun editSourceTitle(title: String) {
             events[SOURCE_REF] = requireNotNull(events[SOURCE_REF]).copy(title = title)
+        }
+
+        fun removeMirrorEvents() {
+            events.keys.filter { it.calendarId == MIRROR_CALENDAR_ID }
+                .forEach(events::remove)
         }
 
         override fun listCalendars(): List<Cl1CalendarDescriptor> {

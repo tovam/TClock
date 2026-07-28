@@ -64,6 +64,7 @@ internal data class Cl1CreateJournal(
     val durationValue: String? = null,
     val mirror: Cl1EventRefDto? = null,
     val appliedRevisionHex: String? = null,
+    val replacedSlotHex: String? = null,
 ) {
     fun destinationRef(): Cl1CalendarRef = Cl1CalendarRef(destinationCalendarId)
 
@@ -80,6 +81,7 @@ internal data class Cl1SyncJournal(
 
 internal object Cl1OperationTypes {
     const val CREATE = "create"
+    const val REPAIR = "repair"
     const val SYNC = "sync"
 }
 

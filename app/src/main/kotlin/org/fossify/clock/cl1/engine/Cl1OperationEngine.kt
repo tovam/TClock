@@ -43,6 +43,48 @@ class Cl1OperationEngine(
         destinationRef: Cl1CalendarRef,
         overrides: Cl1MirrorOverrides = Cl1MirrorOverrides(),
     ): Cl1OperationResult {
+        return prepareCreation(
+            sourceRef = sourceRef,
+            destinationRef = destinationRef,
+            overrides = overrides,
+            replacedSlot = null,
+            operationType = Cl1OperationTypes.CREATE
+        )
+    }
+
+    fun repairRelation(
+        relation: Cl1RelationSnapshot,
+        destinationRef: Cl1CalendarRef,
+        overrides: Cl1MirrorOverrides = Cl1MirrorOverrides(),
+    ): Cl1OperationResult {
+        if (relation.state != Cl1RelationState.MISSING_OR_INACCESSIBLE) {
+            return Cl1OperationResult.Rejected(null, "relationNotMissing")
+        }
+        val source = relation.source
+            ?: return Cl1OperationResult.Rejected(null, "sourceMissingOrInaccessible")
+        if (
+            relation.sourcePayload?.records?.count {
+                it.slot == relation.key.slot
+            } != 1
+        ) {
+            return Cl1OperationResult.Rejected(null, "sourceRelationConflict")
+        }
+        return prepareCreation(
+            sourceRef = source.ref,
+            destinationRef = destinationRef,
+            overrides = overrides,
+            replacedSlot = relation.key.slot,
+            operationType = Cl1OperationTypes.REPAIR
+        )
+    }
+
+    private fun prepareCreation(
+        sourceRef: Cl1EventRef,
+        destinationRef: Cl1CalendarRef,
+        overrides: Cl1MirrorOverrides,
+        replacedSlot: Cl1Bytes?,
+        operationType: String,
+    ): Cl1OperationResult {
         val source = adapter.readEvent(sourceRef)
             ?: return Cl1OperationResult.Rejected(null, "sourceMissingOrInaccessible")
         val sourceView = source.sourceView()
@@ -74,12 +116,13 @@ class Cl1OperationEngine(
             destinationEmail = destinationEmail.value,
             secret = secret,
             createToken = token,
-            overrides = overrides
+            overrides = overrides,
+            replacedSlot = replacedSlot
         ) ?: return Cl1OperationResult.Rejected(null, "invalidOverrides")
 
         val operation = newOperation(
             slotHex = Cl1Crypto.deriveSlot(secret).toHex(),
-            type = Cl1OperationTypes.CREATE,
+            type = operationType,
             phase = Cl1CreatePhases.PREPARED,
             payload = encodeCreate(journal)
         )
@@ -111,7 +154,9 @@ class Cl1OperationEngine(
 
     private fun resumeOperation(operation: Cl1PendingOperation): Cl1OperationResult {
         return when (operation.type) {
-            Cl1OperationTypes.CREATE -> resumeCreate(operation)
+            Cl1OperationTypes.CREATE,
+            Cl1OperationTypes.REPAIR,
+            -> resumeCreate(operation)
             Cl1OperationTypes.SYNC -> resumeSync(operation)
             else -> Cl1OperationResult.Rejected(
                 operation.operationId,
@@ -163,7 +208,10 @@ class Cl1OperationEngine(
             } catch (_: IllegalArgumentException) {
                 return rollbackCreate(operation, journal, "sourceIncompatible")
             }
-            val sourceRecordState = sourceView.recordState(desired.record)
+            val sourceRecordState = sourceView.commitState(
+                desired.record,
+                journal.replacedSlot()
+            )
             if (sourceRecordState == SourceRecordState.CONFLICT) {
                 return conflict(operation, Cl1CreatePhases.CONFLICT, "slotConflict")
             }
@@ -320,7 +368,10 @@ class Cl1OperationEngine(
             if (sourceRecordState == SourceRecordState.EXACT) {
                 return completeCreate(operation, journal)
             }
-            val updatedSource = sourceView.withRecord(desired.record)
+            val updatedSource = sourceView.withCommittedRecord(
+                desired.record,
+                journal.replacedSlot()
+            )
             val sourceWrite = Cl1EventWrite(
                 canonicalEvent = source.canonicalEvent(),
                 description = Cl1Armor.compose(
@@ -333,7 +384,10 @@ class Cl1OperationEngine(
                     val verified = result.event?.ref?.let(adapter::readEvent)
                         ?: adapter.readEvent(source.ref)
                     if (
-                        verified?.sourceView()?.recordState(desired.record) ==
+                        verified?.sourceView()?.commitState(
+                            desired.record,
+                            journal.replacedSlot()
+                        ) ==
                         SourceRecordState.EXACT
                     ) {
                         return completeCreate(operation, journal)
@@ -759,6 +813,9 @@ class Cl1OperationEngine(
             Cl1Email.canonicalize(it.destinationEmail, domainToAscii)
             it.titleOverride()
             it.durationOverride()
+            it.replacedSlot()?.let { slot ->
+                require(slot.size == Cl1Limits.SLOT_BYTES)
+            }
             val offset = it.startOffsetSeconds
             require(
                 offset == null ||
@@ -793,9 +850,39 @@ class Cl1OperationEngine(
             }
         }
 
-        fun withRecord(record: Cl1SourceRecord): Cl1Payload.Source {
-            check(recordState(record) == SourceRecordState.ABSENT)
-            return Cl1Payload.Source((payload.records + record).sortedBy { it.slot })
+        fun commitState(
+            record: Cl1SourceRecord,
+            replacedSlot: Cl1Bytes?,
+        ): SourceRecordState {
+            if (replacedSlot == null) {
+                return recordState(record)
+            }
+            val oldRecords = payload.records.filter { it.slot == replacedSlot }
+            val newState = recordState(record)
+            return when {
+                oldRecords.size == 1 && newState == SourceRecordState.ABSENT -> {
+                    SourceRecordState.ABSENT
+                }
+
+                oldRecords.isEmpty() && newState == SourceRecordState.EXACT -> {
+                    SourceRecordState.EXACT
+                }
+
+                else -> SourceRecordState.CONFLICT
+            }
+        }
+
+        fun withCommittedRecord(
+            record: Cl1SourceRecord,
+            replacedSlot: Cl1Bytes?,
+        ): Cl1Payload.Source {
+            check(commitState(record, replacedSlot) == SourceRecordState.ABSENT)
+            val retained = if (replacedSlot == null) {
+                payload.records
+            } else {
+                payload.records.filterNot { it.slot == replacedSlot }
+            }
+            return Cl1Payload.Source((retained + record).sortedBy { it.slot })
         }
     }
 
@@ -861,6 +948,10 @@ class Cl1OperationEngine(
             }
         }
 
+        fun Cl1CreateJournal.replacedSlot(): Cl1Bytes? {
+            return replacedSlotHex?.let(Cl1Bytes::fromHex)
+        }
+
         fun Cl1CreateJournal.Companion.from(
             sourceRef: Cl1EventRef,
             destination: Cl1CalendarDescriptor,
@@ -868,6 +959,7 @@ class Cl1OperationEngine(
             secret: Cl1Bytes,
             createToken: Cl1Bytes,
             overrides: Cl1MirrorOverrides,
+            replacedSlot: Cl1Bytes?,
         ): Cl1CreateJournal? {
             val title = when (val value = overrides.title) {
                 Cl1TitleOverride.Inherited -> "inherited" to null
@@ -897,7 +989,8 @@ class Cl1OperationEngine(
                 titleValue = title.second,
                 startOffsetSeconds = offset,
                 durationMode = duration.first,
-                durationValue = duration.second
+                durationValue = duration.second,
+                replacedSlotHex = replacedSlot?.toHex()
             )
         }
     }
