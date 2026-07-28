@@ -1,5 +1,6 @@
 package org.fossify.clock.cl1.engine
 
+import org.fossify.clock.cl1.Cl1Bytes
 import org.fossify.clock.cl1.Cl1Description
 import org.fossify.clock.cl1.Cl1DomainToAscii
 import org.fossify.clock.cl1.Cl1JdkDomainToAscii
@@ -66,7 +67,15 @@ class Cl1ProgressiveScanner(
         val discovery = Cl1Discovery.build(
             events = events.values.toList(),
             capturedAtMillis = capturedAtMillis,
-            domainToAscii = domainToAscii
+            domainToAscii = domainToAscii,
+            confirmedOrphanSlots = storage.listConfirmedOrphanSlots()
+                .mapNotNullTo(LinkedHashSet()) { slotHex ->
+                    try {
+                        Cl1Bytes.fromHex(slotHex)
+                    } catch (_: IllegalArgumentException) {
+                        null
+                    }
+                }
         )
         storage.saveDiscovery(discovery)
         return Cl1ScanResult(

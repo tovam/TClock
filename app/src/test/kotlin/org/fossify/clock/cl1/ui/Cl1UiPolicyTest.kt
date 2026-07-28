@@ -19,7 +19,10 @@ class Cl1UiPolicyTest {
     @Test
     fun `copy conflict actions never overwrite automatically`() {
         assertEquals(
-            listOf(Cl1RelationUiAction.UNLINK),
+            listOf(
+                Cl1RelationUiAction.UNLINK,
+                Cl1RelationUiAction.DELETE_SOURCE_AND_COPIES
+            ),
             relation(Cl1RelationState.CONCURRENT_CONFLICT)
                 .availableUiActions(canWrite = true)
         )
@@ -28,7 +31,8 @@ class Cl1UiPolicyTest {
                 Cl1RelationUiAction.RESTORE_FROM_SOURCE,
                 Cl1RelationUiAction.APPLY_COPY_TO_SOURCE,
                 Cl1RelationUiAction.CONVERT_TO_OVERRIDES,
-                Cl1RelationUiAction.UNLINK
+                Cl1RelationUiAction.UNLINK,
+                Cl1RelationUiAction.DELETE_SOURCE_AND_COPIES
             ),
             relation(Cl1RelationState.COPY_MODIFIED)
                 .availableUiActions(canWrite = true)

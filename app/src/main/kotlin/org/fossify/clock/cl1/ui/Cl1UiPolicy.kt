@@ -33,18 +33,21 @@ fun Cl1RelationSnapshot.availableUiActions(
         }
 
         Cl1RelationState.SOURCE_MODIFIED -> listOf(
-            Cl1RelationUiAction.UNLINK
+            Cl1RelationUiAction.UNLINK,
+            Cl1RelationUiAction.DELETE_SOURCE_AND_COPIES
         )
 
         Cl1RelationState.COPY_MODIFIED -> listOf(
             Cl1RelationUiAction.RESTORE_FROM_SOURCE,
             Cl1RelationUiAction.APPLY_COPY_TO_SOURCE,
             Cl1RelationUiAction.CONVERT_TO_OVERRIDES,
-            Cl1RelationUiAction.UNLINK
+            Cl1RelationUiAction.UNLINK,
+            Cl1RelationUiAction.DELETE_SOURCE_AND_COPIES
         )
 
         Cl1RelationState.CONCURRENT_CONFLICT -> listOf(
-            Cl1RelationUiAction.UNLINK
+            Cl1RelationUiAction.UNLINK,
+            Cl1RelationUiAction.DELETE_SOURCE_AND_COPIES
         )
 
         Cl1RelationState.MISSING_OR_INACCESSIBLE -> listOf(

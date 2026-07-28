@@ -93,13 +93,18 @@ class AndroidCl1Storage private constructor(
         database.execSQL(
             "CREATE INDEX pending_operations_slot ON pending_operations(slot_hex)"
         )
+        createConfirmedOrphansTable(database)
     }
 
     override fun onUpgrade(
         database: SQLiteDatabase,
         oldVersion: Int,
         newVersion: Int,
-    ) = Unit
+    ) {
+        if (oldVersion < 2) {
+            createConfirmedOrphansTable(database)
+        }
+    }
 
     @Synchronized
     override fun listCachedBindings(): List<Cl1CachedBinding> {
@@ -176,6 +181,25 @@ class AndroidCl1Storage private constructor(
                             lastSeenMillis = cursor.long("last_seen_millis")
                         )
                     )
+                }
+            }
+        }
+    }
+
+    @Synchronized
+    override fun listConfirmedOrphanSlots(): Set<String> {
+        return readableDatabase.query(
+            TABLE_CONFIRMED_ORPHANS,
+            arrayOf("slot_hex"),
+            null,
+            null,
+            null,
+            null,
+            null
+        ).use { cursor ->
+            buildSet {
+                while (cursor.moveToNext()) {
+                    add(cursor.string("slot_hex"))
                 }
             }
         }
@@ -288,6 +312,19 @@ class AndroidCl1Storage private constructor(
                 )
             }
         }
+    }
+
+    @Synchronized
+    override fun markConfirmedOrphan(slotHex: String) {
+        writableDatabase.insertWithOnConflict(
+            TABLE_CONFIRMED_ORPHANS,
+            null,
+            ContentValues().apply {
+                put("slot_hex", slotHex)
+                put("confirmed_at_millis", System.currentTimeMillis())
+            },
+            SQLiteDatabase.CONFLICT_IGNORE
+        )
     }
 
     @Synchronized
@@ -447,13 +484,25 @@ class AndroidCl1Storage private constructor(
         }
     }
 
+    private fun createConfirmedOrphansTable(database: SQLiteDatabase) {
+        database.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS confirmed_orphans (
+                slot_hex TEXT PRIMARY KEY NOT NULL,
+                confirmed_at_millis INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+    }
+
     companion object {
         private const val DATABASE_NAME = "cl1.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
         private const val TABLE_RELATIONS = "relations"
         private const val TABLE_BINDINGS = "bindings"
         private const val TABLE_EVENT_ISSUES = "event_issues"
         private const val TABLE_PENDING_OPERATIONS = "pending_operations"
+        private const val TABLE_CONFIRMED_ORPHANS = "confirmed_orphans"
 
         @Volatile
         private var instance: AndroidCl1Storage? = null

@@ -18,6 +18,7 @@ object Cl1Discovery {
         events: List<Cl1EventSnapshot>,
         capturedAtMillis: Long = System.currentTimeMillis(),
         domainToAscii: Cl1DomainToAscii = Cl1JdkDomainToAscii,
+        confirmedOrphanSlots: Set<Cl1Bytes> = emptySet(),
     ): Cl1DiscoverySnapshot {
         val uniqueEvents = events.distinctBy { it.ref }
         val sourceCandidates = LinkedHashMap<Cl1Bytes, MutableList<Cl1SourceCandidate>>()
@@ -72,7 +73,8 @@ object Cl1Discovery {
                 slot = slot,
                 sources = sourceCandidates[slot].orEmpty(),
                 mirrors = mirrorCandidates[slot].orEmpty(),
-                domainToAscii = domainToAscii
+                domainToAscii = domainToAscii,
+                confirmedOrphan = slot in confirmedOrphanSlots
             )
         }
         return Cl1DiscoverySnapshot(
@@ -88,6 +90,7 @@ object Cl1Discovery {
         sources: List<Cl1SourceCandidate>,
         mirrors: List<Cl1MirrorCandidate>,
         domainToAscii: Cl1DomainToAscii,
+        confirmedOrphan: Boolean,
     ): Cl1RelationSnapshot {
         if (sources.size > 1 || mirrors.size > 1) {
             return relation(
@@ -100,6 +103,24 @@ object Cl1Discovery {
         }
         val source = sources.singleOrNull()
         val mirror = mirrors.singleOrNull()
+        if (confirmedOrphan) {
+            return if (source == null) {
+                relation(
+                    slot = slot,
+                    state = Cl1RelationState.ORPHAN,
+                    mirror = mirror,
+                    detail = "confirmedByLocalOperation"
+                )
+            } else {
+                relation(
+                    slot = slot,
+                    state = Cl1RelationState.RELATION_CONFLICT,
+                    source = source,
+                    mirror = mirror,
+                    detail = "confirmedOrphanSlotReused"
+                )
+            }
+        }
         if (source == null) {
             return relation(
                 slot = slot,

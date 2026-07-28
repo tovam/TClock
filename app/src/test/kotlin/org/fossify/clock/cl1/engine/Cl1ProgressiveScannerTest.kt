@@ -48,6 +48,27 @@ class Cl1ProgressiveScannerTest {
         assertEquals(result.discovery, storage.saved)
     }
 
+    @Test
+    fun `a mirror from an explicitly abandoned slot is an orphan`() {
+        val mirror = pair(10_000L, 20_000L).last()
+        val slotHex = Cl1Crypto.deriveSlot(SECRET).toHex()
+        val storage = MemoryStorage(setOf(slotHex))
+        val scanner = Cl1ProgressiveScanner(
+            FakeAdapter(listOf(mirror)),
+            storage
+        )
+
+        val result = scanner.scan(
+            beginMillis = mirror.startMillis - 1,
+            endMillis = mirror.startMillis + 1
+        )
+
+        assertEquals(
+            Cl1RelationState.ORPHAN,
+            result.discovery.relations.single().state
+        )
+    }
+
     private fun pair(
         sourceStartMillis: Long,
         mirrorStartMillis: Long,
@@ -167,7 +188,9 @@ class Cl1ProgressiveScannerTest {
         ): Cl1MutationResult = Cl1MutationResult.Failed("unused")
     }
 
-    private class MemoryStorage : Cl1Storage {
+    private class MemoryStorage(
+        private val confirmedOrphans: Set<String> = emptySet(),
+    ) : Cl1Storage {
         var saved: Cl1DiscoverySnapshot? = null
 
         override fun listCachedBindings(): List<Cl1CachedBinding> = emptyList()
@@ -176,9 +199,13 @@ class Cl1ProgressiveScannerTest {
 
         override fun listCachedEventIssues(): List<Cl1CachedEventIssue> = emptyList()
 
+        override fun listConfirmedOrphanSlots(): Set<String> = confirmedOrphans
+
         override fun saveDiscovery(snapshot: Cl1DiscoverySnapshot) {
             saved = snapshot
         }
+
+        override fun markConfirmedOrphan(slotHex: String) = Unit
 
         override fun putOperation(operation: Cl1PendingOperation) = Unit
 

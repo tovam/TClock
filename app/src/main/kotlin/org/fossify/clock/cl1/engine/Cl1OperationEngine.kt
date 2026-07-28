@@ -670,6 +670,7 @@ class Cl1OperationEngine(
             Cl1CreatePhases.SOURCE_COMMITTED,
             encodeCreate(journal)
         )
+        journal.replacedSlotHex?.let(storage::markConfirmedOrphan)
         storage.removeOperation(operation.operationId)
         return Cl1OperationResult.Completed(
             operation.operationId,

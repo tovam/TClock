@@ -305,7 +305,11 @@ internal class Cl1LifecycleEngine(
         )
 
         if (sourceState == ReplacementState.COMMITTED) {
-            return complete(operation, newRecord.slot.toHex())
+            return complete(
+                operation = operation,
+                slotHex = newRecord.slot.toHex(),
+                confirmedOrphanSlots = listOf(journal.oldSlotHex)
+            )
         }
         val replacement = sourceBlock.replace(oldSlot, newRecord)
         val sourceCanonical = try {
@@ -328,7 +332,11 @@ internal class Cl1LifecycleEngine(
                     verified?.sourceBlock()?.replacementState(oldSlot, newRecord) ==
                     ReplacementState.COMMITTED
                 ) {
-                    return complete(operation, newRecord.slot.toHex())
+                    return complete(
+                        operation = operation,
+                        slotHex = newRecord.slot.toHex(),
+                        confirmedOrphanSlots = listOf(journal.oldSlotHex)
+                    )
                 }
                 return pending(operation, "sourceReplacementNotVerified")
             }
@@ -427,7 +435,11 @@ internal class Cl1LifecycleEngine(
         val source = adapter.readEvent(journal.source.toDomain())
         if (source == null) {
             return if (isCalendarAccessible(journal.source.calendarId)) {
-                complete(operation, slotHex = null)
+                complete(
+                    operation = operation,
+                    slotHex = null,
+                    confirmedOrphanSlots = journal.mirrors.map { it.slotHex }
+                )
             } else {
                 pending(operation, "sourceUnavailable")
             }
@@ -447,7 +459,11 @@ internal class Cl1LifecycleEngine(
         return when (val result = adapter.deleteEvent(source)) {
             is Cl1MutationResult.Applied,
             Cl1MutationResult.Missing,
-            -> complete(operation, slotHex = null)
+            -> complete(
+                operation = operation,
+                slotHex = null,
+                confirmedOrphanSlots = journal.mirrors.map { it.slotHex }
+            )
 
             Cl1MutationResult.PreconditionFailed -> {
                 conflict(operation, "sourceChangedConcurrently")
@@ -705,7 +721,9 @@ internal class Cl1LifecycleEngine(
     private fun complete(
         operation: Cl1PendingOperation,
         slotHex: String?,
+        confirmedOrphanSlots: List<String> = emptyList(),
     ): Cl1OperationResult.Completed {
+        confirmedOrphanSlots.forEach(storage::markConfirmedOrphan)
         storage.removeOperation(operation.operationId)
         return Cl1OperationResult.Completed(operation.operationId, slotHex)
     }

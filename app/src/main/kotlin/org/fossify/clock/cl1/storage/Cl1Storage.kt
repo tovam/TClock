@@ -63,7 +63,11 @@ interface Cl1Storage {
 
     fun listCachedEventIssues(): List<Cl1CachedEventIssue>
 
+    fun listConfirmedOrphanSlots(): Set<String>
+
     fun saveDiscovery(snapshot: Cl1DiscoverySnapshot)
+
+    fun markConfirmedOrphan(slotHex: String)
 
     fun putOperation(operation: Cl1PendingOperation)
 

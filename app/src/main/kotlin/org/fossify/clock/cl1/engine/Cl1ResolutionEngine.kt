@@ -488,7 +488,11 @@ internal class Cl1ResolutionEngine(
         val mirror = adapter.readEvent(journal.mirror.toDomain())
             ?: return pending(operation, "mirrorUnavailable")
         return when (val parsed = mirror.parsedDescription) {
-            is Cl1Description.None -> complete(operation, journal.slotHex)
+            is Cl1Description.None -> complete(
+                operation = operation,
+                slotHex = journal.slotHex,
+                confirmedOrphan = true
+            )
             is Cl1Description.Valid -> {
                 val payload = parsed.payload as? Cl1Payload.Mirror
                     ?: return conflict(operation, "mirrorRoleChanged")
@@ -517,7 +521,11 @@ internal class Cl1ResolutionEngine(
                         val verified = result.event?.ref?.let(adapter::readEvent)
                             ?: adapter.readEvent(mirror.ref)
                         if (verified?.parsedDescription is Cl1Description.None) {
-                            complete(operation, journal.slotHex)
+                            complete(
+                                operation = operation,
+                                slotHex = journal.slotHex,
+                                confirmedOrphan = true
+                            )
                         } else {
                             pending(operation, "mirrorDetachNotVerified")
                         }
@@ -827,7 +835,11 @@ internal class Cl1ResolutionEngine(
     private fun complete(
         operation: Cl1PendingOperation,
         slotHex: String,
+        confirmedOrphan: Boolean = false,
     ): Cl1OperationResult.Completed {
+        if (confirmedOrphan) {
+            storage.markConfirmedOrphan(slotHex)
+        }
         storage.removeOperation(operation.operationId)
         return Cl1OperationResult.Completed(operation.operationId, slotHex)
     }

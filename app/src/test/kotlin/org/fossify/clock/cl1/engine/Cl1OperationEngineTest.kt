@@ -136,11 +136,11 @@ class Cl1OperationEngineTest {
             engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF) is
                 Cl1OperationResult.Completed
         )
-        val oldSlot = Cl1Discovery.build(adapter.allEvents())
+        val oldRelation = Cl1Discovery.build(adapter.allEvents())
             .relations
             .single()
-            .key
-            .slot
+        val oldSlot = oldRelation.key.slot
+        val oldMirror = requireNotNull(oldRelation.mirror)
         adapter.removeMirrorEvents()
         val missing = Cl1Discovery.build(adapter.allEvents()).relations.single()
         assertEquals(Cl1RelationState.MISSING_OR_INACCESSIBLE, missing.state)
@@ -151,6 +151,12 @@ class Cl1OperationEngineTest {
         val active = Cl1Discovery.build(adapter.allEvents()).relations.single()
         assertEquals(Cl1RelationState.ACTIVE, active.state)
         assertTrue(active.key.slot != oldSlot)
+        assertTrue(oldSlot.toHex() in storage.listConfirmedOrphanSlots())
+        val resurrected = Cl1Discovery.build(
+            events = listOf(oldMirror),
+            confirmedOrphanSlots = setOf(oldSlot)
+        ).relations.single()
+        assertEquals(Cl1RelationState.ORPHAN, resurrected.state)
         assertTrue(storage.listPendingOperations().isEmpty())
     }
 
@@ -234,12 +240,23 @@ class Cl1OperationEngineTest {
         val engine = Cl1OperationEngine(adapter, storage)
         engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF)
         val active = Cl1Discovery.build(adapter.allEvents()).relations.single()
+        val oldMirror = requireNotNull(active.mirror)
 
         val result = engine.unlink(active)
 
         assertTrue(result is Cl1OperationResult.Completed)
         assertEquals(2, adapter.allEvents().size)
         assertTrue(Cl1Discovery.build(adapter.allEvents()).relations.isEmpty())
+        assertTrue(
+            active.key.slot.toHex() in storage.listConfirmedOrphanSlots()
+        )
+        assertEquals(
+            Cl1RelationState.ORPHAN,
+            Cl1Discovery.build(
+                events = listOf(oldMirror),
+                confirmedOrphanSlots = setOf(active.key.slot)
+            ).relations.single().state
+        )
         adapter.allEvents().forEach {
             assertTrue(it.parsedDescription is Cl1Description.None)
             assertEquals("notes", it.description)
@@ -262,6 +279,9 @@ class Cl1OperationEngineTest {
         assertTrue(after.key.slot != before.key.slot)
         assertEquals(NEW_MIRROR_CALENDAR_ID, after.mirror?.ref?.calendarId)
         assertEquals(OTHER_EMAIL, after.mirror?.calendar?.canonicalAccountEmail)
+        assertTrue(
+            before.key.slot.toHex() in storage.listConfirmedOrphanSlots()
+        )
         assertTrue(storage.listPendingOperations().isEmpty())
     }
 
@@ -280,6 +300,10 @@ class Cl1OperationEngineTest {
         assertEquals(
             listOf(MIRROR_CALENDAR_ID, SOURCE_CALENDAR_ID),
             adapter.deletionOrder.map { it.calendarId }
+        )
+        assertEquals(
+            discovery.relations.map { it.key.slot.toHex() }.toSet(),
+            storage.listConfirmedOrphanSlots()
         )
         assertTrue(storage.listPendingOperations().isEmpty())
     }
@@ -472,6 +496,7 @@ class Cl1OperationEngineTest {
 
     private class MemoryStorage : Cl1Storage {
         private val operations = LinkedHashMap<String, Cl1PendingOperation>()
+        private val confirmedOrphans = LinkedHashSet<String>()
 
         override fun listCachedBindings(): List<Cl1CachedBinding> = emptyList()
 
@@ -479,7 +504,14 @@ class Cl1OperationEngineTest {
 
         override fun listCachedEventIssues(): List<Cl1CachedEventIssue> = emptyList()
 
+        override fun listConfirmedOrphanSlots(): Set<String> =
+            confirmedOrphans.toSet()
+
         override fun saveDiscovery(snapshot: Cl1DiscoverySnapshot) = Unit
+
+        override fun markConfirmedOrphan(slotHex: String) {
+            confirmedOrphans.add(slotHex)
+        }
 
         override fun putOperation(operation: Cl1PendingOperation) {
             operations[operation.operationId] = operation
