@@ -433,7 +433,12 @@ internal class Cl1LifecycleEngine(
             if (entry.deleted) return@forEachIndexed
             val mirror = adapter.readEvent(entry.mirror.toDomain())
             if (mirror == null) {
-                if (isCalendarAccessible(entry.mirror.calendarId)) {
+                val deleteWasAlreadyIssued =
+                    journal.deletingSlotHex == entry.slotHex
+                if (
+                    deleteWasAlreadyIssued &&
+                    isCalendarAccessible(entry.mirror.calendarId)
+                ) {
                     journal = journal.markDeleted(index)
                     operation = checkpoint(
                         operation,
@@ -500,7 +505,12 @@ internal class Cl1LifecycleEngine(
         }
         val source = adapter.readEvent(journal.source.toDomain())
         if (source == null) {
-            return if (isCalendarAccessible(journal.source.calendarId)) {
+            val deleteWasAlreadyIssued =
+                operation.phase == Cl1ResolutionPhases.SOURCE_DELETING
+            return if (
+                deleteWasAlreadyIssued &&
+                isCalendarAccessible(journal.source.calendarId)
+            ) {
                 complete(
                     operation = operation,
                     slotHex = null,

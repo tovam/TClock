@@ -378,6 +378,27 @@ class Cl1OperationEngineTest {
         assertTrue(storage.listPendingOperations().isEmpty())
     }
 
+    @Test
+    fun `source deletion does not trust a missing cached mirror id`() {
+        val adapter = MemoryCalendarAdapter()
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+        engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF)
+        val discovery = Cl1Discovery.build(adapter.allEvents())
+        val slotHex = discovery.relations.single().key.slot.toHex()
+        adapter.removeMirrorEvents()
+
+        val deleted = engine.deleteSource(SOURCE_REF, discovery)
+
+        assertTrue(deleted is Cl1OperationResult.Pending)
+        assertTrue(adapter.allEvents().any { it.ref == SOURCE_REF })
+        assertTrue(adapter.deletionOrder.isEmpty())
+        assertEquals(
+            "copyUnavailable:$slotHex",
+            storage.listPendingOperations().single().lastError
+        )
+    }
+
     private class MemoryCalendarAdapter(
         private var lostFirstCreateResponse: Boolean = false,
         private val sourceTitleAfterCreate: String? = null,
