@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.text.format.DateUtils
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import org.fossify.clock.R
@@ -19,6 +20,8 @@ import org.fossify.clock.cl1.engine.Cl1RelationState
 import org.fossify.clock.cl1.provider.Cl1EventRef
 import org.fossify.clock.cl1.provider.Cl1EventSnapshot
 import org.fossify.clock.cl1.storage.Cl1PendingOperation
+import org.fossify.clock.cl1.ui.availableUiActions
+import org.fossify.clock.cl1.ui.canCreateCl1Copy
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsAlarmBinding
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsCl1NoticeBinding
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsCl1RelationBinding
@@ -54,6 +57,8 @@ class CalendarDiagnosticsAdapter(
     private var primaryColor: Int,
     private val onRefresh: () -> Unit,
     private val onGrantCalendarPermission: () -> Unit,
+    private val onCreateCl1Copy: (Cl1EventSnapshot) -> Unit,
+    private val onCl1RelationActions: (Cl1RelationSnapshot) -> Unit,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private sealed interface Row {
         data class Overview(
@@ -72,11 +77,13 @@ class CalendarDiagnosticsAdapter(
             val cl1Event: Cl1EventSnapshot?,
             val cl1Relations: List<Cl1RelationSnapshot>,
             val cl1Issue: Cl1EventIssue?,
+            val cl1CanWrite: Boolean,
         ) : Row
 
         data class Cl1Relation(
             val relation: Cl1RelationSnapshot,
             val pendingOperations: List<Cl1PendingOperation>,
+            val canWrite: Boolean,
         ) : Row
 
         data class Cl1Notice(
@@ -112,6 +119,7 @@ class CalendarDiagnosticsAdapter(
         val syncableItems: Int,
         val invalidPatternEvents: Int,
         val duplicateAlarms: Int,
+        val cl1WritePermissionMissing: Boolean,
     )
 
     private var rows: List<Row> = emptyList()
@@ -273,7 +281,8 @@ class CalendarDiagnosticsAdapter(
                             relation = relation,
                             pendingOperations = cl1.pendingOperations.filter {
                                 it.slotHex == relation.key.slot.toHex()
-                            }
+                            },
+                            canWrite = cl1.mutationsAllowed
                         )
                     )
                 }
@@ -438,7 +447,9 @@ class CalendarDiagnosticsAdapter(
             },
             duplicateAlarms = plannedAlarms.count {
                 it.diagnostic.hasDuplicateKey
-            }
+            },
+            cl1WritePermissionMissing =
+                snapshot.cl1 != null && !snapshot.cl1.mutationsAllowed
         )
     }
 
@@ -463,7 +474,8 @@ class CalendarDiagnosticsAdapter(
                     cl1Relations = cl1Discovery?.relations
                         ?.filter { it.source?.ref == ref || it.mirror?.ref == ref }
                         .orEmpty(),
-                    cl1Issue = cl1Issues[ref]
+                    cl1Issue = cl1Issues[ref],
+                    cl1CanWrite = snapshot.cl1?.mutationsAllowed == true
                 )
             )
         }
@@ -705,6 +717,22 @@ class CalendarDiagnosticsAdapter(
                 text = formatEventCl1Status(row)
                 beVisibleIf(text.isNotBlank())
             }
+            val cl1Event = row.cl1Event
+            val canCreateCl1Copy =
+                cl1Event?.canCreateCl1Copy(row.cl1CanWrite) == true
+            calendarDiagnosticsEventCreateCl1Copy.apply {
+                beVisibleIf(canCreateCl1Copy)
+                setTextColor(primaryColor)
+                setOnClickListener(
+                    if (canCreateCl1Copy) {
+                        View.OnClickListener {
+                            onCreateCl1Copy(checkNotNull(cl1Event))
+                        }
+                    } else {
+                        null
+                    }
+                )
+            }
             calendarDiagnosticsEventDetailDeclarations.text = context.getString(
                 R.string.calendar_diagnostics_event_detail_declarations,
                 summary.declarations
@@ -861,6 +889,25 @@ class CalendarDiagnosticsAdapter(
                     formatOverrides(relation)
                 calendarDiagnosticsCl1RelationTechnical.text =
                     formatRelationTechnical(row)
+                val actions = relation.availableUiActions(row.canWrite)
+                calendarDiagnosticsCl1RelationActions.apply {
+                    beVisibleIf(actions.isNotEmpty())
+                    setTextColor(primaryColor)
+                    setOnClickListener(
+                        if (actions.isNotEmpty()) {
+                            View.OnClickListener {
+                                onCl1RelationActions(relation)
+                            }
+                        } else {
+                            null
+                        }
+                    )
+                }
+            } else {
+                calendarDiagnosticsCl1RelationActions.apply {
+                    beVisibleIf(false)
+                    setOnClickListener(null)
+                }
             }
             calendarDiagnosticsCl1RelationDivider.setBackgroundColor(textColor)
         }
@@ -1459,6 +1506,13 @@ class CalendarDiagnosticsAdapter(
                         R.string.calendar_diagnostics_sync_error
                     ),
                     action = OverviewAction.REFRESH
+                )
+
+            issues.cl1WritePermissionMissing ->
+                OverviewStatus(
+                    title = context.getString(R.string.cl1_write_permission_title),
+                    details = context.getString(R.string.cl1_write_permission_details),
+                    action = OverviewAction.GRANT_PERMISSION
                 )
 
             issues.expiredAlarms > 0 -> OverviewStatus(

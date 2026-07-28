@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/activity_margin"
+        android:paddingVertical="@dimen/normal_margin">
+
+        <org.fossify.commons.views.MyTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:alpha="0.75"
+            android:text="@string/cl1_copy_options_intro" />
+
+        <org.fossify.commons.views.MyTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/normal_margin"
+            android:text="@string/cl1_title_mode"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/cl1_title_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/cl1_title_inherit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="@string/cl1_title_mode_inherit" />
+
+            <RadioButton
+                android:id="@+id/cl1_title_replace"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/cl1_title_mode_replace" />
+
+            <RadioButton
+                android:id="@+id/cl1_title_template"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/cl1_title_mode_template" />
+
+        </RadioGroup>
+
+        <EditText
+            android:id="@+id/cl1_title_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:hint="@string/cl1_title_value_hint"
+            android:inputType="textCapSentences|textMultiLine"
+            android:maxLines="3"
+            tools:text="Private — {source}" />
+
+        <org.fossify.commons.views.MyTextView
+            android:id="@+id/cl1_title_template_help"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:alpha="0.65"
+            android:text="@string/cl1_title_template_help"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <CheckBox
+            android:id="@+id/cl1_start_enabled"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/normal_margin"
+            android:text="@string/cl1_start_override" />
+
+        <EditText
+            android:id="@+id/cl1_start_seconds"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:hint="@string/cl1_signed_seconds_hint"
+            android:inputType="numberSigned"
+            tools:text="-1800" />
+
+        <org.fossify.commons.views.MyTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/normal_margin"
+            android:text="@string/cl1_duration_mode"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/cl1_duration_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/cl1_duration_inherit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="@string/cl1_duration_mode_inherit" />
+
+            <RadioButton
+                android:id="@+id/cl1_duration_fixed"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/cl1_duration_mode_fixed" />
+
+            <RadioButton
+                android:id="@+id/cl1_duration_delta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/cl1_duration_mode_delta" />
+
+        </RadioGroup>
+
+        <EditText
+            android:id="@+id/cl1_duration_seconds"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:hint="@string/cl1_duration_seconds_hint"
+            android:inputType="numberSigned"
+            tools:text="3600" />
+
+    </LinearLayout>
+
+</ScrollView>

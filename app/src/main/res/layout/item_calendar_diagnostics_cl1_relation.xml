@@ -128,6 +128,19 @@
                 android:textIsSelectable="true"
                 tools:text="Relation: 000102030405… · no pending operation" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/calendar_diagnostics_cl1_relation_actions"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minHeight="40dp"
+                android:text="@string/cl1_actions"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>

@@ -20,6 +20,7 @@ data class Cl1AppSnapshot(
     val calendars: List<Cl1CalendarDescriptor>,
     val pendingOperations: List<Cl1PendingOperation>,
     val operationResults: List<Cl1OperationResult> = emptyList(),
+    val mutationsAllowed: Boolean = true,
 ) {
     val discovery: Cl1DiscoverySnapshot
         get() = scan.discovery
@@ -178,7 +179,8 @@ class Cl1Coordinator(
             scan = scan,
             calendars = adapter.listCalendars(),
             pendingOperations = storage.listPendingOperations(),
-            operationResults = operationResults
+            operationResults = operationResults,
+            mutationsAllowed = mutationsAllowed()
         )
     }
 
