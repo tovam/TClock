@@ -111,6 +111,54 @@ class Cl1ProtocolTest {
     }
 
     @Test
+    fun `reader accepts all specified ASCII whitespace inside Base64`() {
+        val lines = SOURCE_ARMOR.lines()
+        val body = lines[1].chunked(4).joinToString(" \t\r\n")
+        val description = "\n\n${lines.first()}\n$body\n${lines.last()}"
+
+        assertTrue(Cl1Armor.parse(description) is Cl1Description.Valid)
+    }
+
+    @Test
+    fun `unknown version still requires valid Base64`() {
+        val description = "notes\n\n-----BEGIN CL2-----\nA\n-----END CL2-----"
+
+        assertEquals(
+            Cl1CorruptReason.BASE64,
+            (Cl1Armor.parse(description) as Cl1Description.Corrupt).reason
+        )
+    }
+
+    @Test
+    fun `oversized CL1 payload is rejected before decoding`() {
+        val oversizedBytes = Cl1Limits.PAYLOAD_BYTES + 1
+        val encodedLength = (oversizedBytes * 4 + 2) / 3
+        val description = buildString {
+            append("\n\n-----BEGIN CL1-----\n")
+            repeat(encodedLength) { append('A') }
+            append("\n-----END CL1-----")
+        }
+
+        assertEquals(
+            Cl1CorruptReason.PAYLOAD_TOO_LARGE,
+            (Cl1Armor.parse(description) as Cl1Description.Corrupt).reason
+        )
+    }
+
+    @Test
+    fun `very long marker-like lines are rejected without copying them`() {
+        val description = buildString {
+            append("-----BEGIN CL")
+            repeat(100_000) { append('1') }
+        }
+
+        assertEquals(
+            Cl1CorruptReason.MARKERS,
+            (Cl1Armor.parse(description) as Cl1Description.Corrupt).reason
+        )
+    }
+
+    @Test
     fun `malformed or multiple markers are corrupt`() {
         val missingEnd = "notes\n\n-----BEGIN CL1-----\nAA"
         val multiple = "\n\n$SOURCE_ARMOR\n-----END CL1-----"

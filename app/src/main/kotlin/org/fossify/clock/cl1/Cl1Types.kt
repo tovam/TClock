@@ -110,14 +110,12 @@ sealed interface Cl1Description {
     data class Valid(
         override val originalDescription: String,
         val userDescription: String,
-        val rawArmor: String,
         val payload: Cl1Payload,
     ) : Cl1Description
 
     data class UnsupportedVersion(
         override val originalDescription: String,
         val userDescription: String,
-        val rawArmor: String,
         val version: Int,
     ) : Cl1Description
 
