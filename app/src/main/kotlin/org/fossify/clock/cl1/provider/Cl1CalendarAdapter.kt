@@ -65,6 +65,7 @@ data class Cl1EventSnapshot(
     val endTimeZone: String?,
     val location: String?,
     val description: String,
+    val descriptionWasNull: Boolean = false,
     val userUrl: String?,
     val uid2445: String?,
     val allDay: Boolean,
@@ -126,6 +127,10 @@ data class Cl1EventWrite(
     val canonicalEvent: Cl1CanonicalEvent,
     val description: String,
 )
+
+internal fun Cl1EventSnapshot.providerDescription(): String? {
+    return if (descriptionWasNull) null else description
+}
 
 sealed interface Cl1CreateResult {
     data class Created(val event: Cl1EventSnapshot) : Cl1CreateResult

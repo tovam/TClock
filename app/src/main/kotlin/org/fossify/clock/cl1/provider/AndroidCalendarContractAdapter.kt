@@ -474,6 +474,7 @@ class AndroidCalendarContractAdapter(
             visible = int(CalendarContract.Events.VISIBLE) == 1,
             accessLevel = int(CalendarContract.Events.CALENDAR_ACCESS_LEVEL)
         )
+        val descriptionIndex = column(CalendarContract.Events.DESCRIPTION)
         return Cl1EventSnapshot(
             ref = Cl1EventRef(
                 eventId = getLong(column(CalendarContract.Events._ID)),
@@ -486,7 +487,12 @@ class AndroidCalendarContractAdapter(
             startTimeZone = nullableString(CalendarContract.Events.EVENT_TIMEZONE),
             endTimeZone = nullableString(CalendarContract.Events.EVENT_END_TIMEZONE),
             location = nullableString(CalendarContract.Events.EVENT_LOCATION),
-            description = nullableString(CalendarContract.Events.DESCRIPTION).orEmpty(),
+            description = if (isNull(descriptionIndex)) {
+                ""
+            } else {
+                getString(descriptionIndex)
+            },
+            descriptionWasNull = isNull(descriptionIndex),
             userUrl = null,
             uid2445 = nullableString(CalendarContract.Events.UID_2445),
             allDay = int(CalendarContract.Events.ALL_DAY) == 1,
@@ -650,7 +656,10 @@ class AndroidCalendarContractAdapter(
                     event.endTimeZone
                 )
                 builder.nullable(CalendarContract.Events.EVENT_LOCATION, event.location)
-                builder.nullable(CalendarContract.Events.DESCRIPTION, event.description)
+                builder.nullable(
+                    CalendarContract.Events.DESCRIPTION,
+                    event.providerDescription()
+                )
                 builder.equal(CalendarContract.Events.ALL_DAY, if (event.allDay) 1 else 0)
                 builder.nullable(CalendarContract.Events.UID_2445, event.uid2445)
                 builder.nullable(

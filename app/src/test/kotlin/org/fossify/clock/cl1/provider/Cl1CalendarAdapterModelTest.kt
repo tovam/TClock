@@ -32,6 +32,20 @@ class Cl1CalendarAdapterModelTest {
     }
 
     @Test
+    fun `provider comparison preserves null separately from an empty description`() {
+        assertEquals(
+            null,
+            event(description = "", descriptionWasNull = true)
+                .providerDescription()
+        )
+        assertEquals(
+            "",
+            event(description = "", descriptionWasNull = false)
+                .providerDescription()
+        )
+    }
+
+    @Test
     fun `excluded or corrupt events are incompatible`() {
         assertEquals(
             "allDay",
@@ -73,6 +87,7 @@ class Cl1CalendarAdapterModelTest {
         recurring: Boolean = false,
         canceled: Boolean = false,
         hasAttendees: Boolean = false,
+        descriptionWasNull: Boolean = false,
     ): Cl1EventSnapshot {
         return Cl1EventSnapshot(
             ref = Cl1EventRef(eventId = 10, calendarId = 20),
@@ -84,6 +99,7 @@ class Cl1CalendarAdapterModelTest {
             endTimeZone = "UTC",
             location = "",
             description = description,
+            descriptionWasNull = descriptionWasNull,
             userUrl = null,
             uid2445 = null,
             allDay = allDay,
