@@ -122,6 +122,7 @@ sealed interface Cl1Description {
     data class Corrupt(
         override val originalDescription: String,
         val reason: Cl1CorruptReason,
+        val userDescription: String? = null,
     ) : Cl1Description
 }
 

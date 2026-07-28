@@ -44,12 +44,23 @@ class CalendarAlarmDescriptionTest {
     }
 
     @Test
-    fun `ordinary and corrupt descriptions are never discarded`() {
+    fun `ordinary and ambiguously delimited descriptions are never discarded`() {
         val ordinary = "ALARM:+5min"
-        val corrupt =
-            "ALARM:10min\n\n-----BEGIN CL1-----\nbad\n-----END CL1-----"
+        val ambiguous = "ALARM:10min\n\n-----BEGIN CL1-----\nbad"
 
         assertEquals(ordinary, alarmPatternDescription(ordinary))
-        assertEquals(corrupt, alarmPatternDescription(corrupt))
+        assertEquals(ambiguous, alarmPatternDescription(ambiguous))
+    }
+
+    @Test
+    fun `alarm parser excludes a safely delimited but corrupt CL1 body`() {
+        val corrupt =
+            "notes\n\n-----BEGIN CL1-----\nALARM:10min\n-----END CL1-----"
+
+        assertEquals("notes", alarmPatternDescription(corrupt))
+        assertEquals(
+            emptySet<Int>(),
+            TClockPatternParser.parseOffsets(alarmPatternDescription(corrupt))
+        )
     }
 }

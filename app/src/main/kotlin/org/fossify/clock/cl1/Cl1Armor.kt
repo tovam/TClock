@@ -52,7 +52,11 @@ object Cl1Armor {
         val bodyStart = begin.end + 1
         val bodyEnd = end.start - 1
         val body = inspectBody(description, bodyStart, bodyEnd)
-            ?: return Cl1Description.Corrupt(description, Cl1CorruptReason.BASE64)
+            ?: return Cl1Description.Corrupt(
+                description,
+                Cl1CorruptReason.BASE64,
+                userDescription
+            )
         if (beginVersion != SUPPORTED_VERSION) {
             return Cl1Description.UnsupportedVersion(
                 originalDescription = description,
@@ -63,11 +67,16 @@ object Cl1Armor {
         if (body.decodedLength > Cl1Limits.PAYLOAD_BYTES) {
             return Cl1Description.Corrupt(
                 description,
-                Cl1CorruptReason.PAYLOAD_TOO_LARGE
+                Cl1CorruptReason.PAYLOAD_TOO_LARGE,
+                userDescription
             )
         }
         val decoded = decodeBody(description, bodyStart, bodyEnd, body.encodedLength)
-            ?: return Cl1Description.Corrupt(description, Cl1CorruptReason.BASE64)
+            ?: return Cl1Description.Corrupt(
+                description,
+                Cl1CorruptReason.BASE64,
+                userDescription
+            )
         return try {
             Cl1Description.Valid(
                 originalDescription = description,
@@ -75,7 +84,11 @@ object Cl1Armor {
                 payload = Cl1Codec.decode(decoded)
             )
         } catch (exception: Cl1FormatException) {
-            Cl1Description.Corrupt(description, exception.reason)
+            Cl1Description.Corrupt(
+                description,
+                exception.reason,
+                userDescription
+            )
         }
     }
 

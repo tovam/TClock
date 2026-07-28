@@ -13,7 +13,9 @@ internal fun alarmPatternDescription(description: String): String {
         is Cl1Description.None -> parsed.originalDescription
         is Cl1Description.Valid -> parsed.userDescription
         is Cl1Description.UnsupportedVersion -> parsed.userDescription
-        is Cl1Description.Corrupt -> parsed.originalDescription
+        is Cl1Description.Corrupt -> {
+            parsed.userDescription ?: parsed.originalDescription
+        }
     }
 }
 
