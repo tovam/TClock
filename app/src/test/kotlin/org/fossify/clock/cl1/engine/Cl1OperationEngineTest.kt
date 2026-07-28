@@ -50,6 +50,22 @@ class Cl1OperationEngineTest {
     }
 
     @Test
+    fun `an ambiguous create token becomes a durable conflict`() {
+        val adapter = MemoryCalendarAdapter(createConflict = true)
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+
+        val result = engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF)
+
+        assertEquals(
+            "mirrorCreate:createTokenAmbiguous",
+            (result as Cl1OperationResult.Conflict).reason
+        )
+        assertEquals(1, adapter.allEvents().size)
+        assertEquals(1, storage.listPendingOperations().size)
+    }
+
+    @Test
     fun `creation rejects invalid overrides and a full source before journalling`() {
         run {
             val adapter = MemoryCalendarAdapter()
@@ -311,6 +327,7 @@ class Cl1OperationEngineTest {
     private class MemoryCalendarAdapter(
         private var lostFirstCreateResponse: Boolean = false,
         private val sourceTitleAfterCreate: String? = null,
+        private val createConflict: Boolean = false,
     ) : Cl1CalendarAdapter {
         private val sourceCalendar = calendar(SOURCE_CALENDAR_ID)
         private val mirrorCalendar = calendar(MIRROR_CALENDAR_ID)
@@ -394,6 +411,9 @@ class Cl1OperationEngineTest {
             createToken: String,
             value: Cl1EventWrite,
         ): Cl1CreateResult {
+            if (createConflict) {
+                return Cl1CreateResult.Conflict("createTokenAmbiguous")
+            }
             createdByToken[createToken]?.let { ref ->
                 return Cl1CreateResult.Existing(requireNotNull(events[ref]))
             }

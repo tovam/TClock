@@ -132,6 +132,8 @@ sealed interface Cl1CreateResult {
 
     data class Existing(val event: Cl1EventSnapshot) : Cl1CreateResult
 
+    data class Conflict(val reason: String) : Cl1CreateResult
+
     data class Ineligible(
         val reason: String,
         val event: Cl1EventSnapshot? = null,

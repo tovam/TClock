@@ -331,6 +331,14 @@ class Cl1OperationEngine(
                         )
                     }
 
+                    is Cl1CreateResult.Conflict -> {
+                        return conflict(
+                            operation,
+                            Cl1CreatePhases.CONFLICT,
+                            "mirrorCreate:${result.reason}"
+                        )
+                    }
+
                     is Cl1CreateResult.Ineligible -> {
                         val created = result.event
                         if (created != null) {

@@ -90,7 +90,10 @@ class AndroidCalendarContractAdapter(
         if (!hasPermission(Manifest.permission.READ_CALENDAR)) {
             return null
         }
-        return findByCreateUid(calendar.ref.calendarId, createUid(createToken))
+        return findByCreateUid(
+            calendar.ref.calendarId,
+            createUid(createToken)
+        ).singleOrNull()
     }
 
     override fun createEvent(
@@ -103,7 +106,11 @@ class AndroidCalendarContractAdapter(
             return Cl1CreateResult.Ineligible(ineligible)
         }
         val uid = createUid(createToken)
-        findByCreateUid(calendar.ref.calendarId, uid)?.let {
+        val existing = findByCreateUid(calendar.ref.calendarId, uid)
+        if (existing.size > 1) {
+            return Cl1CreateResult.Conflict("createTokenAmbiguous")
+        }
+        existing.singleOrNull()?.let {
             return verifyExistingCreate(it, uid)
         }
 
@@ -128,9 +135,13 @@ class AndroidCalendarContractAdapter(
         return try {
             val results = resolver.applyBatch(CalendarContract.AUTHORITY, operations)
             val createdId = results.getOrNull(1)?.uri?.let(ContentUris::parseId)
+            val matches = findByCreateUid(calendar.ref.calendarId, uid)
+            if (matches.size > 1) {
+                return Cl1CreateResult.Conflict("createTokenAmbiguous")
+            }
             val created = createdId?.let {
                 readEvent(Cl1EventRef(it, calendar.ref.calendarId))
-            } ?: findByCreateUid(calendar.ref.calendarId, uid)
+            } ?: matches.singleOrNull()
             if (created == null) {
                 Cl1CreateResult.Failed("createdEventMissing")
             } else {
@@ -279,8 +290,11 @@ class AndroidCalendarContractAdapter(
         uid: String,
     ): Cl1CreateResult {
         val existing = findByCreateUid(calendarId, uid)
-            ?: return Cl1CreateResult.Failed("atomicCreateFailed")
-        return verifyExistingCreate(existing, uid)
+        return when (existing.size) {
+            0 -> Cl1CreateResult.Failed("atomicCreateFailed")
+            1 -> verifyExistingCreate(existing.single(), uid)
+            else -> Cl1CreateResult.Conflict("createTokenAmbiguous")
+        }
     }
 
     private fun verifyCreatedEvent(
@@ -398,8 +412,8 @@ class AndroidCalendarContractAdapter(
     private fun findByCreateUid(
         calendarId: Long,
         uid: String,
-    ): Cl1EventSnapshot? {
-        return querySingleEvent(
+    ): List<Cl1EventSnapshot> {
+        return queryEvents(
             "${CalendarContract.Events.CALENDAR_ID} = ? AND " +
                 "${CalendarContract.Events.UID_2445} = ?",
             arrayOf(calendarId.toString(), uid)
@@ -410,19 +424,25 @@ class AndroidCalendarContractAdapter(
         selection: String,
         arguments: Array<String>,
     ): Cl1EventSnapshot? {
+        return queryEvents(selection, arguments).singleOrNull()
+    }
+
+    private fun queryEvents(
+        selection: String,
+        arguments: Array<String>,
+    ): List<Cl1EventSnapshot> {
         val cursor = resolver.query(
             CalendarContract.Events.CONTENT_URI,
             EVENT_PROJECTION,
             selection,
             arguments,
             null
-        ) ?: return null
+        ) ?: return emptyList()
         return cursor.use {
-            if (!cursor.moveToFirst()) {
-                null
-            } else {
-                val event = cursor.readEvent()
-                if (cursor.moveToNext()) null else event
+            buildList {
+                while (cursor.moveToNext()) {
+                    cursor.readEvent()?.let(::add)
+                }
             }
         }
     }
