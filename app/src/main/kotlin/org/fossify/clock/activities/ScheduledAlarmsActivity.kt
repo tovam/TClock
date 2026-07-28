@@ -1,6 +1,5 @@
 package org.fossify.clock.activities
 
-import android.Manifest
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
 import org.fossify.clock.R
@@ -26,9 +25,10 @@ class ScheduledAlarmsActivity : SimpleActivity() {
     private lateinit var adapter: ScheduledAlarmsAdapter
 
     private val calendarPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             config.calendarPermissionAsked = true
-            if (granted) {
+            config.calendarWritePermissionAsked = true
+            if (CalendarAlarmSync.hasCalendarPermission(this)) {
                 CalendarSyncScheduler.schedule(this)
             }
             refresh()
@@ -42,13 +42,13 @@ class ScheduledAlarmsActivity : SimpleActivity() {
         adapter = ScheduledAlarmsAdapter(getProperTextColor())
         binding.scheduledAlarmsList.adapter = adapter
         binding.scheduledAlarmsGrantPermission.setOnClickListener {
-            calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+            calendarPermissionLauncher.launch(CalendarAlarmSync.REQUIRED_PERMISSIONS)
         }
         binding.scheduledAlarmsRefresh.setOnClickListener {
             if (CalendarAlarmSync.hasCalendarPermission(this)) {
                 refresh()
             } else {
-                calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+                calendarPermissionLauncher.launch(CalendarAlarmSync.REQUIRED_PERMISSIONS)
             }
         }
     }

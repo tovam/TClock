@@ -42,6 +42,7 @@ const val DATA_EXPORT_EXTENSION = ".json"
 const val LAST_DATA_EXPORT_PATH = "last_alarms_export_path"
 const val MIGRATE_FIRST_DAY_OF_WEEK = "migrate_first_day_of_week"
 const val CALENDAR_PERMISSION_ASKED = "calendar_permission_asked"
+const val CALENDAR_WRITE_PERMISSION_ASKED = "calendar_write_permission_asked"
 
 const val TABS_COUNT = 5
 const val EDITED_TIME_ZONE_SEPARATOR = ":"

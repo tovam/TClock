@@ -71,9 +71,10 @@ class MainActivity : SimpleActivity() {
     private var storedPrimaryColor = 0
     private val binding: ActivityMainBinding by viewBinding(ActivityMainBinding::inflate)
     private val calendarPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             config.calendarPermissionAsked = true
-            if (granted) {
+            config.calendarWritePermissionAsked = true
+            if (CalendarAlarmSync.hasCalendarPermission(this)) {
                 startCalendarSync()
             }
         }
@@ -378,6 +379,15 @@ class MainActivity : SimpleActivity() {
     private fun initializeCalendarSync() {
         if (CalendarAlarmSync.hasCalendarPermission(this)) {
             startCalendarSync()
+            if (
+                !CalendarAlarmSync.hasCalendarWritePermission(this) &&
+                !config.calendarWritePermissionAsked
+            ) {
+                config.calendarWritePermissionAsked = true
+                calendarPermissionLauncher.launch(
+                    arrayOf(Manifest.permission.WRITE_CALENDAR)
+                )
+            }
         } else {
             CalendarSyncScheduler.cancel(this)
             ensureBackgroundThread {
@@ -385,7 +395,8 @@ class MainActivity : SimpleActivity() {
             }
             if (!config.calendarPermissionAsked) {
                 config.calendarPermissionAsked = true
-                calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+                config.calendarWritePermissionAsked = true
+                calendarPermissionLauncher.launch(CalendarAlarmSync.REQUIRED_PERMISSIONS)
             }
         }
     }

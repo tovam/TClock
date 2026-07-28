@@ -1,6 +1,5 @@
 package org.fossify.clock.fragments
 
-import android.Manifest
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -37,12 +36,13 @@ class CalendarDiagnosticsFragment : Fragment() {
     private var hasRenderedSnapshot = false
 
     private val calendarPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             context?.config?.calendarPermissionAsked = true
+            context?.config?.calendarWritePermissionAsked = true
             if (_binding == null) {
                 return@registerForActivityResult
             }
-            if (granted) {
+            if (context?.let { CalendarAlarmSync.hasCalendarPermission(it) } == true) {
                 loadDiagnostics(syncFirst = true)
             } else {
                 loadDiagnostics(syncFirst = false)
@@ -63,7 +63,7 @@ class CalendarDiagnosticsFragment : Fragment() {
             primaryColor = requireContext().getProperPrimaryColor(),
             onRefresh = ::requestCalendarRefresh,
             onGrantCalendarPermission = {
-                calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+                calendarPermissionLauncher.launch(CalendarAlarmSync.REQUIRED_PERMISSIONS)
             }
         )
         binding.calendarDiagnosticsList.adapter = adapter
@@ -124,7 +124,7 @@ class CalendarDiagnosticsFragment : Fragment() {
         if (CalendarAlarmSync.hasCalendarPermission(requireContext())) {
             loadDiagnostics(syncFirst = true)
         } else {
-            calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+            calendarPermissionLauncher.launch(CalendarAlarmSync.REQUIRED_PERMISSIONS)
         }
     }
 

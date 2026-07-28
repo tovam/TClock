@@ -16,6 +16,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.SpannableString
 import android.text.style.RelativeSizeSpan
+import android.util.Log
 import android.widget.Toast
 import androidx.core.app.AlarmManagerCompat
 import androidx.core.app.NotificationCompat
@@ -189,7 +190,8 @@ fun Context.showRemainingTimeMessage(triggerInMillis: Long) {
     )
 }
 
-fun Context.setupAlarmClock(alarm: Alarm, triggerTimeMillis: Long) {
+@Suppress("TooGenericExceptionCaught")
+fun Context.setupAlarmClock(alarm: Alarm, triggerTimeMillis: Long): Boolean {
     val alarmManager = alarmManager
     try {
         AlarmManagerCompat.setAlarmClock(
@@ -198,7 +200,12 @@ fun Context.setupAlarmClock(alarm: Alarm, triggerTimeMillis: Long) {
             getOpenAlarmTabIntent(),
             getAlarmIntent(alarm)
         )
+    } catch (exception: Exception) {
+        showErrorToast(exception)
+        return false
+    }
 
+    try {
         // show a notification to allow dismissing the alarm 10 minutes before it actually triggers
         val dismissalTriggerTime =
             if (triggerTimeMillis - System.currentTimeMillis() < 10.minutes.inWholeMilliseconds) {
@@ -207,15 +214,18 @@ fun Context.setupAlarmClock(alarm: Alarm, triggerTimeMillis: Long) {
                 triggerTimeMillis - 10.minutes.inWholeMilliseconds
             }
 
+        cancelLegacyUpcomingAlarmIntent()
         AlarmManagerCompat.setExactAndAllowWhileIdle(
             alarmManager,
             0,
             dismissalTriggerTime,
             getUpcomingAlarmPendingIntent(alarm)
         )
-    } catch (e: Exception) {
-        showErrorToast(e)
+    } catch (exception: Exception) {
+        // The alarm itself is already safely scheduled. Only its early-dismiss notification failed.
+        Log.e(TAG_ALARM_SCHEDULING, "Unable to schedule upcoming-alarm notification", exception)
     }
+    return true
 }
 
 fun Context.getUpcomingAlarmPendingIntent(alarm: Alarm): PendingIntent {
@@ -225,10 +235,24 @@ fun Context.getUpcomingAlarmPendingIntent(alarm: Alarm): PendingIntent {
 
     return PendingIntent.getBroadcast(
         this,
-        UPCOMING_ALARM_INTENT_ID,
+        alarm.id,
         intent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
+}
+
+private fun Context.cancelLegacyUpcomingAlarmIntent() {
+    val intent = Intent(this, UpcomingAlarmReceiver::class.java)
+    val legacy = PendingIntent.getBroadcast(
+        this,
+        UPCOMING_ALARM_INTENT_ID,
+        intent,
+        PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+    )
+    if (legacy != null) {
+        alarmManager.cancel(legacy)
+        legacy.cancel()
+    }
 }
 
 fun Context.getOpenAlarmTabIntent(): PendingIntent {
@@ -280,6 +304,7 @@ fun Context.cancelAlarmClock(alarm: Alarm) {
     val alarmManager = alarmManager
     alarmManager.cancel(getAlarmIntent(alarm))
     alarmManager.cancel(getUpcomingAlarmPendingIntent(alarm))
+    cancelLegacyUpcomingAlarmIntent()
 }
 
 fun Context.hideNotification(id: Int) {
@@ -585,3 +610,5 @@ fun Context.firstDayOrder(bitMask: Int): Int {
 
     return bitMask
 }
+
+private const val TAG_ALARM_SCHEDULING = "AlarmScheduling"

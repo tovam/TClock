@@ -21,6 +21,10 @@ import java.util.concurrent.TimeUnit
 
 object CalendarAlarmSync {
     const val WINDOW_DAYS = CalendarAlarmWindow.WINDOW_DAYS
+    val REQUIRED_PERMISSIONS = arrayOf(
+        Manifest.permission.READ_CALENDAR,
+        Manifest.permission.WRITE_CALENDAR
+    )
 
     private val lock = Any()
 
@@ -44,6 +48,11 @@ object CalendarAlarmSync {
 
     fun hasCalendarPermission(context: Context): Boolean {
         return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
+            PackageManager.PERMISSION_GRANTED
+    }
+
+    fun hasCalendarWritePermission(context: Context): Boolean {
+        return ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) ==
             PackageManager.PERMISSION_GRANTED
     }
 
@@ -116,13 +125,25 @@ object CalendarAlarmSync {
             Log.e(TAG, "Calendar synchronization failed", exception)
             return@synchronized Result(total = existingAlarms.size, failed = true)
         }
-        val existingByKey = existingAlarms.associateBy { it.calendarKey }.toMutableMap()
+        val existingByKey = existingAlarms
+            .groupBy { it.calendarKey }
+            .mapValues { (_, alarms) -> alarms.sortedBy { it.id }.toMutableList() }
+            .toMutableMap()
         var created = 0
         var updated = 0
         var removed = 0
+        var schedulingFailed = false
 
         candidates.values.forEach { candidate ->
-            val existing = existingByKey.remove(candidate.key)
+            val matchingAlarms = existingByKey[candidate.key]
+            val existing = if (matchingAlarms.isNullOrEmpty()) {
+                null
+            } else {
+                matchingAlarms.removeAt(0)
+            }
+            if (matchingAlarms?.isEmpty() == true) {
+                existingByKey.remove(candidate.key)
+            }
             if (existing == null) {
                 val calendar = Calendar.getInstance().apply {
                     timeInMillis = candidate.triggerAtMillis
@@ -144,8 +165,14 @@ object CalendarAlarmSync {
                 }
                 alarm.id = db.insertAlarm(alarm)
                 if (alarm.id > 0) {
-                    context.setupAlarmClock(alarm, alarm.triggerAtMillis)
-                    created++
+                    if (context.setupAlarmClock(alarm, alarm.triggerAtMillis)) {
+                        created++
+                    } else {
+                        db.deleteAlarms(arrayListOf(alarm))
+                        schedulingFailed = true
+                    }
+                } else {
+                    schedulingFailed = true
                 }
             } else if (existing.needsUpdate(candidate)) {
                 val calendar = Calendar.getInstance().apply {
@@ -166,15 +193,32 @@ object CalendarAlarmSync {
                 )
                 if (db.updateAlarm(updatedAlarm)) {
                     context.cancelAlarmClock(existing)
-                    context.setupAlarmClock(updatedAlarm, updatedAlarm.triggerAtMillis)
-                    updated++
+                    if (
+                        context.setupAlarmClock(
+                            updatedAlarm,
+                            updatedAlarm.triggerAtMillis
+                        )
+                    ) {
+                        updated++
+                    } else {
+                        context.cancelAlarmClock(updatedAlarm)
+                        db.updateAlarm(existing)
+                        if (existing.isEnabled && existing.triggerAtMillis > now) {
+                            context.setupAlarmClock(existing, existing.triggerAtMillis)
+                        }
+                        schedulingFailed = true
+                    }
+                } else {
+                    schedulingFailed = true
                 }
             }
         }
 
-        val staleAlarms = existingByKey.values.filter { alarm ->
-            CalendarAlarmWindow.shouldRemoveStaleAlarm(alarm.triggerAtMillis, now)
-        }
+        val staleAlarms = existingByKey.values
+            .flatten()
+            .filter { alarm ->
+                CalendarAlarmWindow.shouldRemoveStaleAlarm(alarm.triggerAtMillis, now)
+            }
         if (staleAlarms.isNotEmpty()) {
             db.deleteAlarms(ArrayList(staleAlarms))
             removed = staleAlarms.size
@@ -186,7 +230,8 @@ object CalendarAlarmSync {
             created = created,
             updated = updated,
             removed = removed,
-            total = candidates.size
+            total = candidates.size,
+            failed = schedulingFailed
         )
     }
 
