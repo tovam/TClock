@@ -266,6 +266,30 @@ class Cl1ProtocolTest {
     }
 
     @Test
+    fun `canonical text and email reject malformed UTF-16`() {
+        val malformed = "\ud800"
+
+        assertEquals(
+            "unicode",
+            assertThrows(Cl1IncompatibleException::class.java) {
+                Cl1CanonicalEvent.fromSeconds(
+                    title = malformed,
+                    startUnixSeconds = 1_000,
+                    endUnixSeconds = 2_000,
+                    startIanaTimeZone = "UTC",
+                    endIanaTimeZone = "UTC",
+                    location = "",
+                    userDescription = "",
+                    userUrl = ""
+                )
+            }.field
+        )
+        assertThrows(Cl1EmailException::class.java) {
+            Cl1Email.canonicalize("local$malformed@example.com")
+        }
+    }
+
+    @Test
     fun `email keeps local case and rejects whitespace`() {
         assertEquals(
             "Tom@xn--bcher-kva.example",

@@ -128,6 +128,7 @@ internal class Cl1BinaryReader(
 
 internal object Cl1Text {
     fun normalize(value: String): String {
+        requireWellFormedUnicode(value)
         val newlines = value.replace("\r\n", "\n").replace('\r', '\n')
         return Normalizer.normalize(newlines, Normalizer.Form.NFC)
     }
@@ -148,6 +149,30 @@ internal object Cl1Text {
             throw Cl1FormatException(Cl1CorruptReason.NFC)
         }
         return decoded
+    }
+
+    private fun requireWellFormedUnicode(value: String) {
+        var index = 0
+        while (index < value.length) {
+            val character = value[index]
+            when {
+                Character.isHighSurrogate(character) -> {
+                    if (
+                        index + 1 >= value.length ||
+                        !Character.isLowSurrogate(value[index + 1])
+                    ) {
+                        throw Cl1IncompatibleException("unicode")
+                    }
+                    index += 2
+                }
+
+                Character.isLowSurrogate(character) -> {
+                    throw Cl1IncompatibleException("unicode")
+                }
+
+                else -> index++
+            }
+        }
     }
 }
 

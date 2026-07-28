@@ -4,7 +4,6 @@ package org.fossify.clock.cl1
 
 import java.net.IDN
 import java.nio.charset.StandardCharsets
-import java.text.Normalizer
 import java.util.Locale
 
 data class Cl1CanonicalEmail(
@@ -30,7 +29,11 @@ object Cl1Email {
         email: String,
         domainToAscii: Cl1DomainToAscii = Cl1JdkDomainToAscii,
     ): Cl1CanonicalEmail {
-        val normalized = Normalizer.normalize(email, Normalizer.Form.NFC)
+        val normalized = try {
+            Cl1Text.normalize(email)
+        } catch (_: Cl1IncompatibleException) {
+            throw Cl1EmailException("Email is not valid Unicode")
+        }
         if (normalized.codePoints().anyMatch(::isForbiddenCodePoint)) {
             throw Cl1EmailException("Email contains whitespace or control characters")
         }
