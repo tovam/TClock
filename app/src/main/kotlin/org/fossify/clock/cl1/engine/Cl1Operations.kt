@@ -130,6 +130,9 @@ internal data class Cl1UnlinkJournal(
 internal data class Cl1ChangeDestinationJournal(
     val oldSlotHex: String,
     val oldSecretHex: String,
+    val oldEmailCiphertextHex: String? = null,
+    val oldGcmTagHex: String? = null,
+    val oldRevisionHex: String? = null,
     val newSecretHex: String,
     val destinationCalendarId: Long,
     val destinationEmail: String,

@@ -17,6 +17,7 @@ import org.fossify.clock.cl1.Cl1Payload
 import org.fossify.clock.cl1.Cl1Revision
 import org.fossify.clock.cl1.Cl1SourceRecord
 import org.fossify.clock.cl1.Cl1TitleOverride
+import org.fossify.clock.cl1.Cl1Transform
 import org.fossify.clock.cl1.provider.Cl1CalendarAdapter
 import org.fossify.clock.cl1.provider.Cl1CalendarDescriptor
 import org.fossify.clock.cl1.provider.Cl1CalendarRef
@@ -44,13 +45,28 @@ internal class Cl1LifecycleEngine(
         ) {
             return Cl1OperationResult.Rejected(null, "relationNotActive")
         }
-        val source = relation.source
+        val sourceRef = relation.source?.ref
             ?: return Cl1OperationResult.Rejected(null, "sourceUnavailable")
-        val mirror = relation.mirror
+        val mirrorRef = relation.mirror?.ref
             ?: return Cl1OperationResult.Rejected(null, "mirrorUnavailable")
-        val oldPayload = relation.mirrorPayload
+        val source = adapter.readEvent(sourceRef)
+            ?: return Cl1OperationResult.Rejected(null, "sourceUnavailable")
+        val mirror = adapter.readEvent(mirrorRef)
+            ?: return Cl1OperationResult.Rejected(null, "mirrorUnavailable")
+        val freshRelation = Cl1Discovery.build(
+            events = listOf(source, mirror),
+            domainToAscii = domainToAscii
+        ).relations.singleOrNull { it.key == relation.key }
+            ?: return Cl1OperationResult.Rejected(null, "relationUnavailable")
+        if (
+            freshRelation.state != Cl1RelationState.ACTIVE ||
+            freshRelation.needsRevisionRefresh
+        ) {
+            return Cl1OperationResult.Rejected(null, "relationNotActive")
+        }
+        val oldPayload = freshRelation.mirrorPayload
             ?: return Cl1OperationResult.Rejected(null, "mirrorPayloadUnavailable")
-        val sourcePayload = relation.sourcePayload
+        val sourcePayload = freshRelation.sourcePayload
             ?: return Cl1OperationResult.Rejected(null, "sourcePayloadUnavailable")
         if (!source.calendar.supportsSourceRelations) {
             return Cl1OperationResult.Rejected(null, "sourceCalendarCapabilities")
@@ -66,7 +82,7 @@ internal class Cl1LifecycleEngine(
         val newSecret = generateUnusedSecret(sourcePayload.records)
             ?: return Cl1OperationResult.Rejected(null, "slotGeneration")
         val journal = Cl1ChangeDestinationJournal.from(
-            relation = relation,
+            relation = freshRelation,
             destination = destination,
             destinationEmail = destinationEmail.value,
             newSecret = newSecret,
@@ -153,7 +169,7 @@ internal class Cl1LifecycleEngine(
     ): Cl1OperationResult {
         initialOperation.conflictResult()?.let { return it }
         var operation = initialOperation
-        val journal = decodeChange(operation) ?: return corruptJournal(operation)
+        var journal = decodeChange(operation) ?: return corruptJournal(operation)
         val destination = destination(journal)
             ?: return pending(operation, "destinationUnavailable")
         val source = adapter.readEvent(journal.source.toDomain())
@@ -170,7 +186,12 @@ internal class Cl1LifecycleEngine(
             destinationEmail
         ).toSourceRecord()
         val oldSlot = Cl1Bytes.fromHex(journal.oldSlotHex)
-        val sourceState = sourceBlock.replacementState(oldSlot, newRecord)
+        var oldRecord = journal.oldRecord()
+        val sourceState = sourceBlock.replacementState(
+            oldSlot = oldSlot,
+            newRecord = newRecord,
+            expectedOldRecord = oldRecord
+        )
         if (sourceState == ReplacementState.CONFLICT) {
             return conflict(operation, "sourceRecordsChanged")
         }
@@ -213,10 +234,47 @@ internal class Cl1LifecycleEngine(
             if (sourceState != ReplacementState.PREPARED) {
                 return conflict(operation, "sourceCommittedBeforeMirror")
             }
+            val oldRevision = journal.oldRevisionHex?.let(Cl1Bytes::fromHex)
+            if (oldRevision == null) {
+                val active = Cl1Discovery.build(
+                    events = listOf(source, mirror),
+                    domainToAscii = domainToAscii
+                ).relations.singleOrNull { it.key.slot == oldSlot }
+                if (
+                    active == null ||
+                    active.state != Cl1RelationState.ACTIVE ||
+                    active.needsRevisionRefresh
+                ) {
+                    return conflict(operation, "relationChangedBeforeMove")
+                }
+                journal = journal.withOldBaseline(active)
+                oldRecord = journal.oldRecord()
+                operation = checkpoint(operation, operation.phase, journal)
+            } else if (!journal.matchesOldMirrorPayload(mirrorBlock.payload)) {
+                return conflict(operation, "mirrorBlockChangedBeforeMove")
+            }
             val actual = try {
                 mirror.canonicalEvent()
             } catch (_: IllegalArgumentException) {
                 return conflict(operation, "mirrorIncompatible")
+            }
+            val baselineRevision = journal.oldRevisionHex
+                ?.let(Cl1Bytes::fromHex)
+                ?: return corruptJournal(operation)
+            val actualRevision = Cl1Revision.calculate(oldSecret, actual)
+            val expectedRevision = try {
+                Cl1Revision.calculate(
+                    oldSecret,
+                    Cl1Transform.apply(source.canonicalEvent(), mirrorBlock.payload)
+                )
+            } catch (_: IllegalArgumentException) {
+                return conflict(operation, "sourceIncompatible")
+            }
+            if (
+                !Cl1Crypto.constantTimeEquals(actualRevision, baselineRevision) ||
+                !Cl1Crypto.constantTimeEquals(expectedRevision, baselineRevision)
+            ) {
+                return conflict(operation, "relationChangedBeforeMove")
             }
             val newPayload = journal.newMirrorPayload(
                 secret = newSecret,
@@ -311,7 +369,11 @@ internal class Cl1LifecycleEngine(
                 confirmedOrphanSlots = listOf(journal.oldSlotHex)
             )
         }
-        val replacement = sourceBlock.replace(oldSlot, newRecord)
+        val replacement = sourceBlock.replace(
+            oldSlot = oldSlot,
+            newRecord = newRecord,
+            expectedOldRecord = oldRecord
+        )
         val sourceCanonical = try {
             source.canonicalEvent()
         } catch (_: IllegalArgumentException) {
@@ -329,7 +391,11 @@ internal class Cl1LifecycleEngine(
                 val verified = result.event?.ref?.let(adapter::readEvent)
                     ?: adapter.readEvent(source.ref)
                 if (
-                    verified?.sourceBlock()?.replacementState(oldSlot, newRecord) ==
+                    verified?.sourceBlock()?.replacementState(
+                        oldSlot,
+                        newRecord,
+                        journal.oldRecord()
+                    ) ==
                     ReplacementState.COMMITTED
                 ) {
                     return complete(
@@ -524,12 +590,16 @@ internal class Cl1LifecycleEngine(
     private fun SourceBlock.replacementState(
         oldSlot: Cl1Bytes,
         newRecord: Cl1SourceRecord,
+        expectedOldRecord: Cl1SourceRecord?,
     ): ReplacementState {
-        val oldCount = payload.records.count { it.slot == oldSlot }
+        val oldRecords = payload.records.filter { it.slot == oldSlot }
         val newMatches = payload.records.filter { it.slot == newRecord.slot }
         return when {
-            oldCount == 1 && newMatches.isEmpty() -> ReplacementState.PREPARED
-            oldCount == 0 &&
+            oldRecords.size == 1 &&
+                (expectedOldRecord == null || oldRecords.single() == expectedOldRecord) &&
+                newMatches.isEmpty() -> ReplacementState.PREPARED
+
+            oldRecords.isEmpty() &&
                 newMatches.size == 1 &&
                 newMatches.single() == newRecord -> ReplacementState.COMMITTED
 
@@ -540,8 +610,12 @@ internal class Cl1LifecycleEngine(
     private fun SourceBlock.replace(
         oldSlot: Cl1Bytes,
         newRecord: Cl1SourceRecord,
+        expectedOldRecord: Cl1SourceRecord?,
     ): Cl1Payload.Source {
-        check(replacementState(oldSlot, newRecord) == ReplacementState.PREPARED)
+        check(
+            replacementState(oldSlot, newRecord, expectedOldRecord) ==
+                ReplacementState.PREPARED
+        )
         return Cl1Payload.Source(
             (payload.records.filterNot { it.slot == oldSlot } + newRecord)
                 .sortedBy { it.slot }
@@ -572,6 +646,23 @@ internal class Cl1LifecycleEngine(
                     Cl1Bytes.fromHex(it.oldSecretHex).size ==
                         Cl1Limits.SECRET_BYTES
                 )
+                require(
+                    (it.oldEmailCiphertextHex == null) ==
+                        (it.oldGcmTagHex == null)
+                )
+                require(
+                    (it.oldRevisionHex == null) ==
+                        (it.oldEmailCiphertextHex == null)
+                )
+                it.oldRecord()?.let { record ->
+                    require(record.slot == Cl1Bytes.fromHex(it.oldSlotHex))
+                }
+                it.oldRevisionHex?.let { revision ->
+                    require(
+                        Cl1Bytes.fromHex(revision).size ==
+                            Cl1Limits.REVISION_BYTES
+                    )
+                }
                 require(
                     Cl1Bytes.fromHex(it.newSecretHex).size ==
                         Cl1Limits.SECRET_BYTES
@@ -782,6 +873,11 @@ internal class Cl1LifecycleEngine(
             source: Cl1EventSnapshot,
             mirror: Cl1EventSnapshot,
         ): Cl1ChangeDestinationJournal {
+            val oldRecord = relation.sourcePayload
+                ?.records
+                ?.getOrNull(requireNotNull(relation.sourceRecordIndex))
+                ?: throw IllegalArgumentException("sourceRecord")
+            require(oldRecord.slot == relation.key.slot)
             val title = when (val value = oldPayload.titleOverride) {
                 Cl1TitleOverride.Inherited -> "inherited" to null
                 is Cl1TitleOverride.Replacement -> "replacement" to value.value
@@ -795,6 +891,9 @@ internal class Cl1LifecycleEngine(
             return Cl1ChangeDestinationJournal(
                 oldSlotHex = relation.key.slot.toHex(),
                 oldSecretHex = oldPayload.secret.toHex(),
+                oldEmailCiphertextHex = oldRecord.emailCiphertext.toHex(),
+                oldGcmTagHex = oldRecord.gcmTag.toHex(),
+                oldRevisionHex = oldPayload.revision.toHex(),
                 newSecretHex = newSecret.toHex(),
                 destinationCalendarId = destination.ref.calendarId,
                 destinationEmail = destinationEmail,
@@ -846,6 +945,52 @@ internal class Cl1LifecycleEngine(
                 titleOverride = titleOverride(),
                 startOffsetSeconds = startOffsetSeconds,
                 durationOverride = durationOverride()
+            )
+        }
+
+        fun Cl1ChangeDestinationJournal.oldRecord(): Cl1SourceRecord? {
+            val ciphertext = oldEmailCiphertextHex ?: return null
+            val tag = oldGcmTagHex ?: return null
+            return Cl1SourceRecord(
+                slot = Cl1Bytes.fromHex(oldSlotHex),
+                emailCiphertext = Cl1Bytes.fromHex(ciphertext),
+                gcmTag = Cl1Bytes.fromHex(tag)
+            )
+        }
+
+        fun Cl1ChangeDestinationJournal.matchesOldMirrorPayload(
+            payload: Cl1Payload.Mirror,
+        ): Boolean {
+            val revision = oldRevisionHex?.let(Cl1Bytes::fromHex) ?: return false
+            return Cl1Crypto.constantTimeEquals(
+                payload.secret,
+                Cl1Bytes.fromHex(oldSecretHex)
+            ) &&
+                Cl1Crypto.constantTimeEquals(payload.revision, revision) &&
+                payload.titleOverride == titleOverride() &&
+                payload.startOffsetSeconds == startOffsetSeconds &&
+                payload.durationOverride == durationOverride()
+        }
+
+        fun Cl1ChangeDestinationJournal.withOldBaseline(
+            relation: Cl1RelationSnapshot,
+        ): Cl1ChangeDestinationJournal {
+            val payload = requireNotNull(relation.mirrorPayload)
+            val record = requireNotNull(relation.sourcePayload)
+                .records
+                .getOrNull(requireNotNull(relation.sourceRecordIndex))
+                ?: throw IllegalArgumentException("sourceRecord")
+            require(record.slot.toHex() == oldSlotHex)
+            require(
+                Cl1Crypto.constantTimeEquals(
+                    payload.secret,
+                    Cl1Bytes.fromHex(oldSecretHex)
+                )
+            )
+            return copy(
+                oldEmailCiphertextHex = record.emailCiphertext.toHex(),
+                oldGcmTagHex = record.gcmTag.toHex(),
+                oldRevisionHex = payload.revision.toHex()
             )
         }
     }

@@ -302,6 +302,33 @@ class Cl1OperationEngineTest {
     }
 
     @Test
+    fun `destination change refuses a copy edited after its baseline was read`() {
+        val adapter = MemoryCalendarAdapter()
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+        engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF)
+        val before = Cl1Discovery.build(adapter.allEvents()).relations.single()
+        adapter.editMirrorBeforeNextCalendarList()
+
+        val changed = engine.changeDestination(before, NEW_MIRROR_CALENDAR_REF)
+
+        assertTrue(changed is Cl1OperationResult.Conflict)
+        val mirror = adapter.allEvents().single {
+            it.ref.calendarId == MIRROR_CALENDAR_ID
+        }
+        assertEquals("Concurrent copy edit", mirror.title)
+        assertTrue(
+            adapter.allEvents().none {
+                it.ref.calendarId == NEW_MIRROR_CALENDAR_ID
+            }
+        )
+        assertEquals(
+            Cl1RelationState.COPY_MODIFIED,
+            Cl1Discovery.build(adapter.allEvents()).relations.single().state
+        )
+    }
+
+    @Test
     fun `source deletion removes every known mirror before deleting the source`() {
         val adapter = MemoryCalendarAdapter()
         val storage = MemoryStorage()
@@ -345,6 +372,7 @@ class Cl1OperationEngineTest {
         )
         private val createdByToken = HashMap<String, Cl1EventRef>()
         private var nextId = 100L
+        private var editMirrorBeforeCalendarList = false
         val deletionOrder = ArrayList<Cl1EventRef>()
 
         fun allEvents(): List<Cl1EventSnapshot> = events.values.toList()
@@ -383,7 +411,15 @@ class Cl1OperationEngineTest {
             )
         }
 
+        fun editMirrorBeforeNextCalendarList() {
+            editMirrorBeforeCalendarList = true
+        }
+
         override fun listCalendars(): List<Cl1CalendarDescriptor> {
+            if (editMirrorBeforeCalendarList) {
+                editMirrorBeforeCalendarList = false
+                editMirror("Concurrent copy edit")
+            }
             return listOf(sourceCalendar, mirrorCalendar, newMirrorCalendar)
         }
 
