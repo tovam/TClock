@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude
+            domain="database"
+            path="cl1.db" />
+        <exclude
+            domain="database"
+            path="cl1.db-wal" />
+        <exclude
+            domain="database"
+            path="cl1.db-shm" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude
+            domain="database"
+            path="cl1.db" />
+        <exclude
+            domain="database"
+            path="cl1.db-wal" />
+        <exclude
+            domain="database"
+            path="cl1.db-shm" />
+    </device-transfer>
+</data-extraction-rules>

@@ -104,7 +104,6 @@ class AndroidCalendarContractAdapter(
         }
         val operations = arrayListOf(
             ContentProviderOperation.newAssertQuery(CalendarContract.Events.CONTENT_URI)
-                .withProjection(arrayOf(CalendarContract.Events._ID))
                 .withSelection(
                     "${CalendarContract.Events.CALENDAR_ID} = ? AND " +
                         "${CalendarContract.Events.UID_2445} = ?",

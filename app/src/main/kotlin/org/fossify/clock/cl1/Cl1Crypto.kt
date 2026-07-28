@@ -110,6 +110,13 @@ object Cl1Crypto {
         return MessageDigest.isEqual(left.toByteArray(), right.toByteArray())
     }
 
+    fun constantTimeEquals(left: String, right: String): Boolean {
+        return MessageDigest.isEqual(
+            left.toByteArray(StandardCharsets.UTF_8),
+            right.toByteArray(StandardCharsets.UTF_8)
+        )
+    }
+
     internal fun hkdf(
         inputKey: ByteArray,
         info: String,
