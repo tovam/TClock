@@ -83,7 +83,8 @@ class Cl1ProgressiveScanner(
     private fun Cl1EventSnapshot.discoveryWindow(): Cl1ScanWindow {
         return Cl1ScanWindow(
             beginMillis = startMillis.saturatedMinus(DISCOVERY_RADIUS_MILLIS),
-            endMillis = startMillis.saturatedPlus(DISCOVERY_RADIUS_MILLIS)
+            endMillis = maxOf(startMillis, endMillis ?: startMillis)
+                .saturatedPlus(DISCOVERY_RADIUS_MILLIS)
         )
     }
 

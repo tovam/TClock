@@ -83,18 +83,28 @@ class AndroidCalendarContractAdapter(
         )
     }
 
+    override fun findCreatedEvent(
+        calendar: Cl1CalendarDescriptor,
+        createToken: String,
+    ): Cl1EventSnapshot? {
+        if (!hasPermission(Manifest.permission.READ_CALENDAR)) {
+            return null
+        }
+        return findByCreateUid(calendar.ref.calendarId, createUid(createToken))
+    }
+
     override fun createEvent(
         calendar: Cl1CalendarDescriptor,
         createToken: String,
         value: Cl1EventWrite,
     ): Cl1CreateResult {
-        val ineligible = writeIneligibility(calendar, value)
+        val ineligible = writeIneligibility(calendar, value, creating = true)
         if (ineligible != null) {
             return Cl1CreateResult.Ineligible(ineligible)
         }
         val uid = createUid(createToken)
         findByCreateUid(calendar.ref.calendarId, uid)?.let {
-            return verifyCreatedEvent(it, uid, value, existing = true)
+            return verifyExistingCreate(it, uid)
         }
 
         val values = try {
@@ -124,12 +134,12 @@ class AndroidCalendarContractAdapter(
             if (created == null) {
                 Cl1CreateResult.Failed("createdEventMissing")
             } else {
-                verifyCreatedEvent(created, uid, value, existing = false)
+                verifyCreatedEvent(created, uid, value)
             }
         } catch (_: OperationApplicationException) {
-            resolveCreateFailure(calendar.ref.calendarId, uid, value)
+            resolveCreateFailure(calendar.ref.calendarId, uid)
         } catch (_: RemoteException) {
-            resolveCreateFailure(calendar.ref.calendarId, uid, value)
+            resolveCreateFailure(calendar.ref.calendarId, uid)
         } catch (_: SecurityException) {
             Cl1CreateResult.Ineligible("writePermission")
         } catch (_: IllegalArgumentException) {
@@ -141,7 +151,11 @@ class AndroidCalendarContractAdapter(
         expected: Cl1EventSnapshot,
         value: Cl1EventWrite,
     ): Cl1MutationResult {
-        val ineligible = writeIneligibility(expected.calendar, value)
+        val ineligible = writeIneligibility(
+            expected.calendar,
+            value,
+            creating = false
+        )
         if (ineligible != null) {
             return Cl1MutationResult.Ineligible(ineligible)
         }
@@ -176,10 +190,7 @@ class AndroidCalendarContractAdapter(
     }
 
     override fun deleteEvent(expected: Cl1EventSnapshot): Cl1MutationResult {
-        if (!expected.calendar.capabilities.contains(
-                Cl1CalendarCapability.CONDITIONAL_DELETE
-            )
-        ) {
+        if (!expected.calendar.supportsSourceRelations) {
             return Cl1MutationResult.Ineligible("conditionalDelete")
         }
         val precondition = EventPrecondition.from(expected)
@@ -210,18 +221,16 @@ class AndroidCalendarContractAdapter(
     private fun resolveCreateFailure(
         calendarId: Long,
         uid: String,
-        value: Cl1EventWrite,
     ): Cl1CreateResult {
         val existing = findByCreateUid(calendarId, uid)
             ?: return Cl1CreateResult.Failed("atomicCreateFailed")
-        return verifyCreatedEvent(existing, uid, value, existing = true)
+        return verifyExistingCreate(existing, uid)
     }
 
     private fun verifyCreatedEvent(
         event: Cl1EventSnapshot,
         uid: String,
         value: Cl1EventWrite,
-        existing: Boolean,
     ): Cl1CreateResult {
         if (event.uid2445 != uid) {
             return Cl1CreateResult.Ineligible("createTokenNotPreserved", event)
@@ -230,10 +239,17 @@ class AndroidCalendarContractAdapter(
         if (mismatch != null) {
             return Cl1CreateResult.Ineligible(mismatch, event)
         }
-        return if (existing) {
+        return Cl1CreateResult.Created(event)
+    }
+
+    private fun verifyExistingCreate(
+        event: Cl1EventSnapshot,
+        uid: String,
+    ): Cl1CreateResult {
+        return if (event.uid2445 == uid) {
             Cl1CreateResult.Existing(event)
         } else {
-            Cl1CreateResult.Created(event)
+            Cl1CreateResult.Ineligible("createTokenNotPreserved", event)
         }
     }
 
@@ -301,8 +317,14 @@ class AndroidCalendarContractAdapter(
     private fun writeIneligibility(
         calendar: Cl1CalendarDescriptor,
         value: Cl1EventWrite,
+        creating: Boolean,
     ): String? {
-        if (!calendar.supportsCompleteRelations) {
+        val supported = if (creating) {
+            calendar.supportsMirrorRelations
+        } else {
+            calendar.supportsSourceRelations
+        }
+        if (!supported) {
             return "calendarCapabilities"
         }
         if (!hasPermission(Manifest.permission.WRITE_CALENDAR)) {
@@ -428,10 +450,12 @@ class AndroidCalendarContractAdapter(
             null
         }
         val canWrite = hasPermission(Manifest.permission.WRITE_CALENDAR) &&
-            accessLevel >= CalendarContract.Calendars.CAL_ACCESS_CONTRIBUTOR &&
-            email != null
+            accessLevel >= CalendarContract.Calendars.CAL_ACCESS_CONTRIBUTOR
         val capabilities = buildSet {
             add(Cl1CalendarCapability.READ)
+            if (email != null) {
+                add(Cl1CalendarCapability.ACCOUNT_EMAIL)
+            }
             if (canWrite) {
                 add(Cl1CalendarCapability.WRITE)
                 add(Cl1CalendarCapability.PRESERVE_DESCRIPTION)

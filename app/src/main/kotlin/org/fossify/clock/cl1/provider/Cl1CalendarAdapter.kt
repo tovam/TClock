@@ -17,6 +17,7 @@ enum class Cl1CalendarCapability {
     READ,
     WRITE,
     PRESERVE_DESCRIPTION,
+    ACCOUNT_EMAIL,
     IDEMPOTENT_CREATE,
     CONDITIONAL_UPDATE,
     CONDITIONAL_DELETE,
@@ -33,11 +34,24 @@ data class Cl1CalendarDescriptor(
     val accessLevel: Int,
     val capabilities: Set<Cl1CalendarCapability>,
 ) {
+    val supportsSourceRelations: Boolean
+        get() = capabilities.containsAll(SOURCE_RELATION_CAPABILITIES)
+
+    val supportsMirrorRelations: Boolean
+        get() = capabilities.containsAll(MIRROR_RELATION_CAPABILITIES)
+
     val supportsCompleteRelations: Boolean
-        get() = capabilities.containsAll(COMPLETE_RELATION_CAPABILITIES)
+        get() = supportsMirrorRelations
 
     companion object {
-        val COMPLETE_RELATION_CAPABILITIES = Cl1CalendarCapability.entries.toSet()
+        val SOURCE_RELATION_CAPABILITIES = setOf(
+            Cl1CalendarCapability.READ,
+            Cl1CalendarCapability.WRITE,
+            Cl1CalendarCapability.PRESERVE_DESCRIPTION,
+            Cl1CalendarCapability.CONDITIONAL_UPDATE,
+            Cl1CalendarCapability.CONDITIONAL_DELETE
+        )
+        val MIRROR_RELATION_CAPABILITIES = Cl1CalendarCapability.entries.toSet()
     }
 }
 
@@ -146,6 +160,11 @@ interface Cl1CalendarAdapter {
     ): List<Cl1EventSnapshot>
 
     fun readEvent(ref: Cl1EventRef): Cl1EventSnapshot?
+
+    fun findCreatedEvent(
+        calendar: Cl1CalendarDescriptor,
+        createToken: String,
+    ): Cl1EventSnapshot? = null
 
     fun createEvent(
         calendar: Cl1CalendarDescriptor,
