@@ -209,7 +209,7 @@
     <string name="cl1_title_mode_template">Use a template</string>
     <string name="cl1_title_value_hint">Replacement or template</string>
     <string name="cl1_title_template_help">Use {source} where the current source title should appear.</string>
-    <string name="cl1_title_invalid">The replacement or template cannot exceed 4096 UTF-8 bytes.</string>
+    <string name="cl1_title_invalid">The replacement or template must not be empty and cannot exceed 4096 UTF-8 bytes.</string>
     <string name="cl1_start_override">Offset the copy’s start time</string>
     <string name="cl1_signed_seconds_hint">Signed seconds (for example −1800 or +3600)</string>
     <string name="cl1_duration_mode">Copy duration</string>

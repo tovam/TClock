@@ -227,7 +227,7 @@
     <string name="cl1_title_mode_template">Utiliser un modèle</string>
     <string name="cl1_title_value_hint">Remplacement ou modèle</string>
     <string name="cl1_title_template_help">Utilise {source} à l’endroit où le titre actuel de la source doit apparaître.</string>
-    <string name="cl1_title_invalid">Le remplacement ou le modèle ne peut pas dépasser 4096 octets UTF-8.</string>
+    <string name="cl1_title_invalid">Le remplacement ou le modèle ne doit pas être vide et ne peut pas dépasser 4096 octets UTF-8.</string>
     <string name="cl1_start_override">Décaler l’heure de début de la copie</string>
     <string name="cl1_signed_seconds_hint">Secondes signées (par exemple −1800 ou +3600)</string>
     <string name="cl1_duration_mode">Durée de la copie</string>

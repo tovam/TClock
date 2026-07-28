@@ -73,11 +73,15 @@ data class Cl1CanonicalEvent private constructor(
             } catch (_: DateTimeException) {
                 throw Cl1IncompatibleException("timeZone")
             }
+            if (normalized !in IANA_TIME_ZONE_IDS) {
+                throw Cl1IncompatibleException("timeZone")
+            }
             return normalized
         }
 
         private const val MILLIS_PER_SECOND = 1_000L
         private const val ASCII_MAX = 0x7f
+        private val IANA_TIME_ZONE_IDS = ZoneId.getAvailableZoneIds()
     }
 }
 

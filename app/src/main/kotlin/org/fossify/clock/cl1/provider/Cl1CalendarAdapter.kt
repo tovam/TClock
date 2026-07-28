@@ -77,6 +77,7 @@ data class Cl1EventSnapshot(
     val recurring: Boolean,
     val canceled: Boolean,
     val deleted: Boolean,
+    val hasAttendees: Boolean = false,
 ) {
     val parsedDescription: Cl1Description by lazy(LazyThreadSafetyMode.NONE) {
         org.fossify.clock.cl1.Cl1Armor.parse(description)
@@ -94,6 +95,9 @@ data class Cl1EventSnapshot(
         }
         if (deleted) {
             throw Cl1CalendarIncompatibleException("deleted")
+        }
+        if (hasAttendees) {
+            throw Cl1CalendarIncompatibleException("attendees")
         }
         val safeEndMillis = endMillis
             ?: throw Cl1CalendarIncompatibleException("end")

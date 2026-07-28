@@ -8,6 +8,7 @@ import org.fossify.clock.cl1.Cl1Armor
 import org.fossify.clock.cl1.Cl1Bytes
 import org.fossify.clock.cl1.Cl1CanonicalEvent
 import org.fossify.clock.cl1.Cl1CanonicalEventCodec
+import org.fossify.clock.cl1.Cl1Codec
 import org.fossify.clock.cl1.Cl1Crypto
 import org.fossify.clock.cl1.Cl1Description
 import org.fossify.clock.cl1.Cl1DomainToAscii
@@ -105,10 +106,29 @@ class Cl1OperationEngine(
         if (!source.calendar.supportsSourceRelations) {
             return Cl1OperationResult.Rejected(null, "sourceCalendarCapabilities")
         }
-        try {
+        if (
+            replacedSlot == null &&
+            sourceView.payload.records.size >= Cl1Limits.SOURCE_RECORDS
+        ) {
+            return Cl1OperationResult.Rejected(null, "sourceRecordLimit")
+        }
+        val sourceCanonical = try {
             source.canonicalEvent()
         } catch (_: IllegalArgumentException) {
             return Cl1OperationResult.Rejected(null, "sourceIncompatible")
+        }
+        val validationPayload = Cl1Payload.Mirror(
+            secret = Cl1Bytes.copyOf(ByteArray(Cl1Limits.SECRET_BYTES)),
+            revision = Cl1Bytes.copyOf(ByteArray(Cl1Limits.REVISION_BYTES)),
+            titleOverride = overrides.title,
+            startOffsetSeconds = overrides.startOffsetSeconds,
+            durationOverride = overrides.duration
+        )
+        try {
+            Cl1Codec.encode(validationPayload)
+            Cl1Transform.apply(sourceCanonical, validationPayload)
+        } catch (_: IllegalArgumentException) {
+            return Cl1OperationResult.Rejected(null, "invalidOverrides")
         }
 
         val destination = adapter.listCalendars()

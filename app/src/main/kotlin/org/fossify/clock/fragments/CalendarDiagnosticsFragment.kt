@@ -459,15 +459,6 @@ class CalendarDiagnosticsFragment : Fragment() {
                 )
             }
         }
-        if (titleChoices.size == 1) {
-            chooseDurationConversion(
-                relation = relation,
-                source = source,
-                mirror = mirror,
-                titleOverride = titleChoices.single().second
-            )
-            return
-        }
         simpleActivity().getAlertDialogBuilder()
             .setTitle(R.string.cl1_convert_title_choice)
             .setItems(titleChoices.map { it.first }.toTypedArray()) { _, index ->

@@ -1,8 +1,13 @@
 package org.fossify.clock.cl1.engine
 
+import org.fossify.clock.cl1.Cl1Armor
+import org.fossify.clock.cl1.Cl1Bytes
 import org.fossify.clock.cl1.Cl1CanonicalEmail
 import org.fossify.clock.cl1.Cl1Description
 import org.fossify.clock.cl1.Cl1DurationOverride
+import org.fossify.clock.cl1.Cl1Limits
+import org.fossify.clock.cl1.Cl1Payload
+import org.fossify.clock.cl1.Cl1SourceRecord
 import org.fossify.clock.cl1.Cl1TitleOverride
 import org.fossify.clock.cl1.provider.Cl1CalendarAdapter
 import org.fossify.clock.cl1.provider.Cl1CalendarCapability
@@ -42,6 +47,51 @@ class Cl1OperationEngineTest {
         val relation = Cl1Discovery.build(adapter.allEvents()).relations.single()
         assertEquals(Cl1RelationState.ACTIVE, relation.state)
         assertTrue(!relation.needsRevisionRefresh)
+    }
+
+    @Test
+    fun `creation rejects invalid overrides and a full source before journalling`() {
+        run {
+            val adapter = MemoryCalendarAdapter()
+            val storage = MemoryStorage()
+            val engine = Cl1OperationEngine(adapter, storage)
+
+            val result = engine.createRelation(
+                sourceRef = SOURCE_REF,
+                destinationRef = MIRROR_CALENDAR_REF,
+                overrides = Cl1MirrorOverrides(
+                    title = Cl1TitleOverride.Replacement("")
+                )
+            )
+
+            assertEquals(
+                "invalidOverrides",
+                (result as Cl1OperationResult.Rejected).reason
+            )
+            assertTrue(storage.listPendingOperations().isEmpty())
+            assertEquals(1, adapter.allEvents().size)
+        }
+
+        run {
+            val adapter = MemoryCalendarAdapter()
+            val storage = MemoryStorage()
+            val records = List(Cl1Limits.SOURCE_RECORDS) { index ->
+                sourceRecord(index)
+            }
+            adapter.replaceSourceDescription(
+                Cl1Armor.compose("notes", Cl1Payload.Source(records))
+            )
+            val engine = Cl1OperationEngine(adapter, storage)
+
+            val result = engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF)
+
+            assertEquals(
+                "sourceRecordLimit",
+                (result as Cl1OperationResult.Rejected).reason
+            )
+            assertTrue(storage.listPendingOperations().isEmpty())
+            assertEquals(1, adapter.allEvents().size)
+        }
     }
 
     @Test
@@ -260,6 +310,12 @@ class Cl1OperationEngineTest {
 
         fun editSourceTitle(title: String) {
             events[SOURCE_REF] = requireNotNull(events[SOURCE_REF]).copy(title = title)
+        }
+
+        fun replaceSourceDescription(description: String) {
+            events[SOURCE_REF] = requireNotNull(events[SOURCE_REF]).copy(
+                description = description
+            )
         }
 
         fun removeMirrorEvents() {
@@ -499,6 +555,19 @@ class Cl1OperationEngineTest {
                 recurring = false,
                 canceled = false,
                 deleted = false
+            )
+        }
+
+        fun sourceRecord(index: Int): Cl1SourceRecord {
+            val slot = ByteArray(Cl1Limits.SLOT_BYTES)
+            slot[slot.lastIndex - 1] = (index ushr Byte.SIZE_BITS).toByte()
+            slot[slot.lastIndex] = index.toByte()
+            return Cl1SourceRecord(
+                slot = Cl1Bytes.copyOf(slot),
+                emailCiphertext = Cl1Bytes.copyOf(byteArrayOf(1)),
+                gcmTag = Cl1Bytes.copyOf(
+                    ByteArray(Cl1Limits.GCM_TAG_BYTES)
+                )
             )
         }
     }

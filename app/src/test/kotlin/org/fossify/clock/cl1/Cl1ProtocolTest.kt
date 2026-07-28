@@ -77,6 +77,19 @@ class Cl1ProtocolTest {
     }
 
     @Test
+    fun `canonical event requires IANA time zone identifiers`() {
+        val valid = canonicalEvent(startTimeZone = "Europe/Paris")
+        assertEquals("Europe/Paris", valid.startIanaTimeZone)
+
+        assertEquals(
+            "timeZone",
+            assertThrows(Cl1IncompatibleException::class.java) {
+                canonicalEvent(startTimeZone = "+02:00")
+            }.field
+        )
+    }
+
+    @Test
     fun `armor preserves the exact user description ending`() {
         val source = Cl1Payload.Source(listOf(testRecord(1)))
         val userDescription = "first\r\nsecond\n"
@@ -277,5 +290,18 @@ class Cl1ProtocolTest {
         const val MIRROR_ARMOR = "-----BEGIN CL1-----\n" +
             "tAABAgMEBQYHCAkKCwwNDg8RIjNEVWZ3iAxJbmRpc3BvbmlibGWPHJAc\n" +
             "-----END CL1-----"
+    }
+
+    private fun canonicalEvent(startTimeZone: String): Cl1CanonicalEvent {
+        return Cl1CanonicalEvent.fromSeconds(
+            title = "Event",
+            startUnixSeconds = 1_000,
+            endUnixSeconds = 2_000,
+            startIanaTimeZone = startTimeZone,
+            endIanaTimeZone = "UTC",
+            location = "",
+            userDescription = "",
+            userUrl = ""
+        )
     }
 }

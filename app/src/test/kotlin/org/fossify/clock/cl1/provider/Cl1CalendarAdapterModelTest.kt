@@ -32,7 +32,7 @@ class Cl1CalendarAdapterModelTest {
     }
 
     @Test
-    fun `all day recurring canceled and corrupt events are incompatible`() {
+    fun `excluded or corrupt events are incompatible`() {
         assertEquals(
             "allDay",
             assertThrows(Cl1CalendarIncompatibleException::class.java) {
@@ -52,6 +52,12 @@ class Cl1CalendarAdapterModelTest {
             }.field
         )
         assertEquals(
+            "attendees",
+            assertThrows(Cl1CalendarIncompatibleException::class.java) {
+                event(hasAttendees = true).canonicalEvent()
+            }.field
+        )
+        assertEquals(
             "description",
             assertThrows(Cl1CalendarIncompatibleException::class.java) {
                 event(description = "\n\n-----BEGIN CL1-----\nbad\n").canonicalEvent()
@@ -66,6 +72,7 @@ class Cl1CalendarAdapterModelTest {
         allDay: Boolean = false,
         recurring: Boolean = false,
         canceled: Boolean = false,
+        hasAttendees: Boolean = false,
     ): Cl1EventSnapshot {
         return Cl1EventSnapshot(
             ref = Cl1EventRef(eventId = 10, calendarId = 20),
@@ -88,7 +95,8 @@ class Cl1CalendarAdapterModelTest {
             rawStatus = null,
             recurring = recurring,
             canceled = canceled,
-            deleted = false
+            deleted = false,
+            hasAttendees = hasAttendees
         )
     }
 

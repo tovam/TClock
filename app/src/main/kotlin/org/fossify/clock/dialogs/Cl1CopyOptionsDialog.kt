@@ -63,9 +63,11 @@ class Cl1CopyOptionsDialog(
     private fun readOverrides(): Cl1MirrorOverrides? {
         val titleValue = binding.cl1TitleValue.text.toString()
         val titleMode = binding.cl1TitleMode.checkedRadioButtonId
+        val titleValueInvalid = titleValue.isEmpty() ||
+            titleValue.toByteArray(Charsets.UTF_8).size > Cl1Limits.TITLE_BYTES
         if (
             titleMode != R.id.cl1_title_inherit &&
-            titleValue.toByteArray(Charsets.UTF_8).size > Cl1Limits.TITLE_BYTES
+            titleValueInvalid
         ) {
             activity.toast(R.string.cl1_title_invalid)
             return null

@@ -479,7 +479,9 @@ class AndroidCalendarContractAdapter(
             recurring = hasRecurrence(),
             canceled = nullableInt(CalendarContract.Events.STATUS) ==
                 CalendarContract.Events.STATUS_CANCELED,
-            deleted = false
+            deleted = false,
+            hasAttendees =
+                nullableInt(CalendarContract.Events.HAS_ATTENDEE_DATA) == 1
         )
     }
 
@@ -652,6 +654,10 @@ class AndroidCalendarContractAdapter(
                     event.originalEventId
                 )
                 builder.nullable(CalendarContract.Events.STATUS, event.rawStatus?.toLong())
+                builder.nullable(
+                    CalendarContract.Events.HAS_ATTENDEE_DATA,
+                    if (event.hasAttendees) 1L else 0L
+                )
                 builder.literal(
                     "(${CalendarContract.Events.DELETED} IS NULL OR " +
                         "${CalendarContract.Events.DELETED} = 0)"
@@ -744,6 +750,7 @@ class AndroidCalendarContractAdapter(
             CalendarContract.Events.EXDATE,
             CalendarContract.Events.ORIGINAL_ID,
             CalendarContract.Events.STATUS,
+            CalendarContract.Events.HAS_ATTENDEE_DATA,
             CalendarContract.Events.DELETED
         )
     }
