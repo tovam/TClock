@@ -260,11 +260,15 @@ class Cl1OperationEngine(
         repeat(MAX_CREATE_RETRIES) {
             val source = adapter.readEvent(journal.source.toDomain())
             if (source == null) {
-                return rollbackCreate(
-                    operation,
-                    journal,
-                    "sourceMissingOrInaccessible"
-                )
+                return if (operation.phase == Cl1CreatePhases.SOURCE_COMMITTING) {
+                    pending(operation, "sourceCommitUnconfirmed")
+                } else {
+                    rollbackCreate(
+                        operation,
+                        journal,
+                        "sourceMissingOrInaccessible"
+                    )
+                }
             }
             val sourceView = source.sourceView()
                 ?: return conflict(
@@ -480,6 +484,11 @@ class Cl1OperationEngine(
                     sourceView.userDescription,
                     updatedSource
                 )
+            )
+            operation = checkpoint(
+                operation,
+                Cl1CreatePhases.SOURCE_COMMITTING,
+                encodeCreate(journal)
             )
             when (val result = adapter.updateEvent(source, sourceWrite)) {
                 is Cl1MutationResult.Applied -> {

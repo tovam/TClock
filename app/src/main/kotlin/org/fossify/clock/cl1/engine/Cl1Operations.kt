@@ -225,6 +225,7 @@ internal object Cl1CreatePhases {
     const val PREPARED = "prepared"
     const val MIRROR_CREATING = "mirrorCreating"
     const val MIRROR_VERIFIED = "mirrorVerified"
+    const val SOURCE_COMMITTING = "sourceCommitting"
     const val SOURCE_COMMITTED = "sourceCommitted"
     const val ROLLBACK_DELETING = "rollbackDeleting"
     const val CONFLICT = "conflict"

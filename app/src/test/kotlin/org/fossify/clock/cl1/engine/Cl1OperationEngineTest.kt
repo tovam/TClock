@@ -172,6 +172,38 @@ class Cl1OperationEngineTest {
     }
 
     @Test
+    fun `an unavailable source after an uncertain commit never deletes the mirror`() {
+        val adapter = MemoryCalendarAdapter(lostFirstSourceUpdateResponse = true)
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+
+        assertTrue(
+            engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF) is
+                Cl1OperationResult.Pending
+        )
+        adapter.hideSourceReads(1)
+
+        val unavailable = engine.resumePending().single()
+
+        assertEquals(
+            "sourceCommitUnconfirmed",
+            (unavailable as Cl1OperationResult.Pending).reason
+        )
+        assertEquals(2, adapter.allEvents().size)
+        assertTrue(adapter.deletionOrder.isEmpty())
+        assertEquals(
+            Cl1CreatePhases.SOURCE_COMMITTING,
+            storage.listPendingOperations().single().phase
+        )
+
+        assertTrue(engine.resumePending().single() is Cl1OperationResult.Completed)
+        assertEquals(
+            Cl1RelationState.ACTIVE,
+            Cl1Discovery.build(adapter.allEvents()).relations.single().state
+        )
+    }
+
+    @Test
     fun `an ambiguous create token becomes a durable conflict`() {
         val adapter = MemoryCalendarAdapter(createConflict = true)
         val storage = MemoryStorage()
@@ -570,6 +602,7 @@ class Cl1OperationEngineTest {
         private var nextId = 100L
         private var editMirrorBeforeCalendarList = false
         private var mirrorReadsBeforeBlockMutation: Int? = null
+        private var hiddenSourceReads = 0
         val deletionOrder = ArrayList<Cl1EventRef>()
 
         fun allEvents(): List<Cl1EventSnapshot> = events.values.toList()
@@ -590,6 +623,11 @@ class Cl1OperationEngineTest {
 
         fun makeSourceAllDay() {
             events[SOURCE_REF] = requireNotNull(events[SOURCE_REF]).copy(allDay = true)
+        }
+
+        fun hideSourceReads(count: Int) {
+            require(count >= 0)
+            hiddenSourceReads = count
         }
 
         fun removeMirrorEvents() {
@@ -644,6 +682,10 @@ class Cl1OperationEngineTest {
         }
 
         override fun readEvent(ref: Cl1EventRef): Cl1EventSnapshot? {
+            if (ref == SOURCE_REF && hiddenSourceReads > 0) {
+                hiddenSourceReads--
+                return null
+            }
             if (ref.calendarId == MIRROR_CALENDAR_ID) {
                 mirrorReadsBeforeBlockMutation?.let { remaining ->
                     if (remaining == 1) {
