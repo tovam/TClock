@@ -76,6 +76,7 @@ internal data class Cl1CreateJournal(
     val mirror: Cl1EventRefDto? = null,
     val appliedRevisionHex: String? = null,
     val replacedSlotHex: String? = null,
+    val rollbackReason: String? = null,
 ) {
     fun destinationRef(): Cl1CalendarRef = Cl1CalendarRef(destinationCalendarId)
 
@@ -225,6 +226,7 @@ internal object Cl1CreatePhases {
     const val MIRROR_CREATING = "mirrorCreating"
     const val MIRROR_VERIFIED = "mirrorVerified"
     const val SOURCE_COMMITTED = "sourceCommitted"
+    const val ROLLBACK_DELETING = "rollbackDeleting"
     const val CONFLICT = "conflict"
 }
 

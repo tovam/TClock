@@ -249,16 +249,38 @@ class Cl1OperationEngine(
         } catch (_: IllegalArgumentException) {
             return conflict(operation, Cl1CreatePhases.CONFLICT, "journalCorrupt")
         }
+        if (operation.phase == Cl1CreatePhases.ROLLBACK_DELETING) {
+            return rollbackCreate(
+                operation = operation,
+                journal = journal,
+                reason = journal.rollbackReason ?: "creationRollback"
+            )
+        }
 
         repeat(MAX_CREATE_RETRIES) {
             val source = adapter.readEvent(journal.source.toDomain())
-            val sourceView = source?.sourceView()
-            if (source == null || sourceView == null) {
+            if (source == null) {
                 return rollbackCreate(
                     operation,
                     journal,
-                    source?.sourceRejection() ?: "sourceMissingOrInaccessible"
+                    "sourceMissingOrInaccessible"
                 )
+            }
+            val sourceView = source.sourceView()
+                ?: return conflict(
+                    operation,
+                    Cl1CreatePhases.CONFLICT,
+                    source.sourceRejection()
+                )
+            val sourceRecordState = sourceView.commitState(
+                sourceRecord(journal),
+                journal.replacedSlot()
+            )
+            if (sourceRecordState == SourceRecordState.CONFLICT) {
+                return conflict(operation, Cl1CreatePhases.CONFLICT, "slotConflict")
+            }
+            if (sourceRecordState == SourceRecordState.EXACT) {
+                return completeCreate(operation, journal)
             }
             if (!source.calendar.supportsSourceRelations) {
                 return rollbackCreate(
@@ -274,13 +296,6 @@ class Cl1OperationEngine(
                 desiredMirror(source, sourceView, journal)
             } catch (_: IllegalArgumentException) {
                 return rollbackCreate(operation, journal, "sourceIncompatible")
-            }
-            val sourceRecordState = sourceView.commitState(
-                desired.record,
-                journal.replacedSlot()
-            )
-            if (sourceRecordState == SourceRecordState.CONFLICT) {
-                return conflict(operation, Cl1CreatePhases.CONFLICT, "slotConflict")
             }
 
             var mirror = journal.mirror?.toDomain()?.let(adapter::readEvent)
@@ -455,9 +470,6 @@ class Cl1OperationEngine(
                 encodeCreate(journal)
             )
 
-            if (sourceRecordState == SourceRecordState.EXACT) {
-                return completeCreate(operation, journal)
-            }
             val updatedSource = sourceView.withCommittedRecord(
                 desired.record,
                 journal.replacedSlot()
@@ -648,8 +660,20 @@ class Cl1OperationEngine(
         val mirror = journal.mirror?.toDomain()?.let(adapter::readEvent)
             ?: adapter.findCreatedEvent(destination, journal.createTokenHex)
         if (mirror == null) {
-            storage.removeOperation(operation.operationId)
-            return Cl1OperationResult.Rejected(operation.operationId, reason)
+            return when (operation.phase) {
+                Cl1CreatePhases.PREPARED -> {
+                    storage.removeOperation(operation.operationId)
+                    Cl1OperationResult.Rejected(operation.operationId, reason)
+                }
+
+                Cl1CreatePhases.ROLLBACK_DELETING -> {
+                    completeCreateRollback(operation, reason)
+                }
+
+                else -> {
+                    pending(operation, "$reason:mirrorUnavailableForRollback")
+                }
+            }
         }
         if (mirror.ownedMirror(journal) == null) {
             return conflict(
@@ -658,30 +682,48 @@ class Cl1OperationEngine(
                 "$reason:mirrorChanged"
             )
         }
+        val rollbackJournal = journal.copy(rollbackReason = reason)
+        val deleting = if (operation.phase == Cl1CreatePhases.ROLLBACK_DELETING) {
+            operation
+        } else {
+            checkpoint(
+                operation,
+                Cl1CreatePhases.ROLLBACK_DELETING,
+                encodeCreate(rollbackJournal)
+            )
+        }
         return when (val result = adapter.deleteEvent(mirror)) {
             is Cl1MutationResult.Applied,
             Cl1MutationResult.Missing,
             -> {
-                storage.removeOperation(operation.operationId)
-                Cl1OperationResult.Rejected(operation.operationId, reason)
+                completeCreateRollback(deleting, reason)
             }
 
             Cl1MutationResult.PreconditionFailed -> {
                 conflict(
-                    operation,
+                    deleting,
                     Cl1CreatePhases.CONFLICT,
                     "$reason:rollbackConflict"
                 )
             }
 
             is Cl1MutationResult.Ineligible -> {
-                pending(operation, "$reason:rollbackIneligible:${result.reason}")
+                pending(deleting, "$reason:rollbackIneligible:${result.reason}")
             }
 
             is Cl1MutationResult.Failed -> {
-                pending(operation, "$reason:rollbackFailed:${result.reason}")
+                pending(deleting, "$reason:rollbackFailed:${result.reason}")
             }
         }
+    }
+
+    private fun completeCreateRollback(
+        operation: Cl1PendingOperation,
+        reason: String,
+    ): Cl1OperationResult.Rejected {
+        operation.slotHex?.let(storage::markConfirmedOrphan)
+        storage.removeOperation(operation.operationId)
+        return Cl1OperationResult.Rejected(operation.operationId, reason)
     }
 
     private fun completeCreate(
@@ -707,8 +749,7 @@ class Cl1OperationEngine(
         journal: Cl1CreateJournal,
     ): DesiredMirror {
         val secret = Cl1Bytes.fromHex(journal.secretHex)
-        val email = Cl1Email.canonicalize(journal.destinationEmail, domainToAscii)
-        val record = Cl1Crypto.encryptEmail(secret, email).toSourceRecord()
+        val record = sourceRecord(journal)
         val preliminary = Cl1Payload.Mirror(
             secret = secret,
             revision = Cl1Bytes.copyOf(ByteArray(Cl1Limits.REVISION_BYTES)),
@@ -725,6 +766,12 @@ class Cl1OperationEngine(
         )
         check(sourceView.recordState(record) != SourceRecordState.CONFLICT)
         return DesiredMirror(record, payload, revision, write)
+    }
+
+    private fun sourceRecord(journal: Cl1CreateJournal): Cl1SourceRecord {
+        val secret = Cl1Bytes.fromHex(journal.secretHex)
+        val email = Cl1Email.canonicalize(journal.destinationEmail, domainToAscii)
+        return Cl1Crypto.encryptEmail(secret, email).toSourceRecord()
     }
 
     private fun findDestination(

@@ -74,6 +74,104 @@ class Cl1OperationEngineTest {
     }
 
     @Test
+    fun `creation rollback keeps its journal when the mirror cannot be confirmed absent`() {
+        val adapter = MemoryCalendarAdapter(
+            lostFirstCreateResponse = true,
+            forgetCreateTokenAfterLostResponse = true
+        )
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+
+        assertTrue(
+            engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF) is
+                Cl1OperationResult.Pending
+        )
+        adapter.removeSourceEvent()
+
+        val rollback = engine.resumePending().single()
+
+        assertEquals(
+            "sourceMissingOrInaccessible:mirrorUnavailableForRollback",
+            (rollback as Cl1OperationResult.Pending).reason
+        )
+        assertEquals(1, adapter.allEvents().size)
+        assertEquals(MIRROR_CALENDAR_ID, adapter.allEvents().single().ref.calendarId)
+        assertEquals(1, storage.listPendingOperations().size)
+        assertTrue(storage.listConfirmedOrphanSlots().isEmpty())
+    }
+
+    @Test
+    fun `creation rollback resumes a lost delete response and tombstones its slot`() {
+        val adapter = MemoryCalendarAdapter(
+            lostFirstCreateResponse = true,
+            lostFirstDeleteResponse = true
+        )
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+
+        assertTrue(
+            engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF) is
+                Cl1OperationResult.Pending
+        )
+        val slotHex = requireNotNull(storage.listPendingOperations().single().slotHex)
+        adapter.removeSourceEvent()
+
+        assertTrue(engine.resumePending().single() is Cl1OperationResult.Pending)
+        assertTrue(adapter.allEvents().isEmpty())
+        assertEquals(
+            Cl1CreatePhases.ROLLBACK_DELETING,
+            storage.listPendingOperations().single().phase
+        )
+
+        assertTrue(engine.resumePending().single() is Cl1OperationResult.Rejected)
+        assertTrue(storage.listPendingOperations().isEmpty())
+        assertTrue(slotHex in storage.listConfirmedOrphanSlots())
+    }
+
+    @Test
+    fun `creation never rolls back through a concurrently corrupted source block`() {
+        val adapter = MemoryCalendarAdapter(lostFirstCreateResponse = true)
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+
+        assertTrue(
+            engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF) is
+                Cl1OperationResult.Pending
+        )
+        adapter.replaceSourceDescription(
+            "notes\n\n-----BEGIN CL1-----\nbad\n-----END CL1-----"
+        )
+
+        val resumed = engine.resumePending().single()
+
+        assertEquals(
+            "sourceBlockCorrupt",
+            (resumed as Cl1OperationResult.Conflict).reason
+        )
+        assertEquals(2, adapter.allEvents().size)
+        assertEquals(1, storage.listPendingOperations().size)
+        assertTrue(adapter.deletionOrder.isEmpty())
+    }
+
+    @Test
+    fun `an exact source commit wins even if the source later becomes incompatible`() {
+        val adapter = MemoryCalendarAdapter(lostFirstSourceUpdateResponse = true)
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+
+        assertTrue(
+            engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF) is
+                Cl1OperationResult.Pending
+        )
+        adapter.makeSourceAllDay()
+
+        assertTrue(engine.resumePending().single() is Cl1OperationResult.Completed)
+        assertEquals(2, adapter.allEvents().size)
+        assertTrue(storage.listPendingOperations().isEmpty())
+        assertTrue(adapter.deletionOrder.isEmpty())
+    }
+
+    @Test
     fun `an ambiguous create token becomes a durable conflict`() {
         val adapter = MemoryCalendarAdapter(createConflict = true)
         val storage = MemoryStorage()
@@ -428,6 +526,8 @@ class Cl1OperationEngineTest {
         private val sourceTitleAfterCreate: String? = null,
         private val createConflict: Boolean = false,
         private val forgetCreateTokenAfterLostResponse: Boolean = false,
+        private var lostFirstDeleteResponse: Boolean = false,
+        private var lostFirstSourceUpdateResponse: Boolean = false,
     ) : Cl1CalendarAdapter {
         private val sourceCalendar = calendar(SOURCE_CALENDAR_ID)
         private val mirrorCalendar = calendar(MIRROR_CALENDAR_ID)
@@ -459,6 +559,14 @@ class Cl1OperationEngineTest {
             events[SOURCE_REF] = requireNotNull(events[SOURCE_REF]).copy(
                 description = description
             )
+        }
+
+        fun removeSourceEvent() {
+            events.remove(SOURCE_REF)
+        }
+
+        fun makeSourceAllDay() {
+            events[SOURCE_REF] = requireNotNull(events[SOURCE_REF]).copy(allDay = true)
         }
 
         fun removeMirrorEvents() {
@@ -595,7 +703,15 @@ class Cl1OperationEngineTest {
                 value = value
             )
             events[current.ref] = updated
-            return Cl1MutationResult.Applied(updated)
+            return if (
+                expected.ref == SOURCE_REF &&
+                lostFirstSourceUpdateResponse
+            ) {
+                lostFirstSourceUpdateResponse = false
+                Cl1MutationResult.Failed("lostSourceUpdateResponse")
+            } else {
+                Cl1MutationResult.Applied(updated)
+            }
         }
 
         override fun deleteEvent(
@@ -607,7 +723,12 @@ class Cl1OperationEngineTest {
             }
             events.remove(expected.ref)
             deletionOrder.add(expected.ref)
-            return Cl1MutationResult.Applied(null)
+            return if (lostFirstDeleteResponse) {
+                lostFirstDeleteResponse = false
+                Cl1MutationResult.Failed("lostDeleteResponse")
+            } else {
+                Cl1MutationResult.Applied(null)
+            }
         }
 
         override fun moveEvent(
