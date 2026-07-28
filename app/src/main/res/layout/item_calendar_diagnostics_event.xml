@@ -137,6 +137,16 @@
                 android:paddingTop="2dp"
                 tools:text="In the 15-day event window" />
 
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_event_detail_cl1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/small_margin"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="CL1 source · 2 linked copies"
+                tools:visibility="visible" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

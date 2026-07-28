@@ -8,7 +8,20 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import org.fossify.clock.R
+import org.fossify.clock.cl1.Cl1Description
+import org.fossify.clock.cl1.Cl1DurationOverride
+import org.fossify.clock.cl1.Cl1Payload
+import org.fossify.clock.cl1.Cl1TitleOverride
+import org.fossify.clock.cl1.engine.Cl1EventIssue
+import org.fossify.clock.cl1.engine.Cl1EventIssueState
+import org.fossify.clock.cl1.engine.Cl1RelationSnapshot
+import org.fossify.clock.cl1.engine.Cl1RelationState
+import org.fossify.clock.cl1.provider.Cl1EventRef
+import org.fossify.clock.cl1.provider.Cl1EventSnapshot
+import org.fossify.clock.cl1.storage.Cl1PendingOperation
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsAlarmBinding
+import org.fossify.clock.databinding.ItemCalendarDiagnosticsCl1NoticeBinding
+import org.fossify.clock.databinding.ItemCalendarDiagnosticsCl1RelationBinding
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsEmptyBinding
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsEventBinding
 import org.fossify.clock.databinding.ItemCalendarDiagnosticsEventAlarmStatusBinding
@@ -56,6 +69,19 @@ class CalendarDiagnosticsAdapter(
             val diagnostic: CalendarEventDiagnostic,
             val summary: CalendarEventAlarmSummary,
             val capturedAtMillis: Long,
+            val cl1Event: Cl1EventSnapshot?,
+            val cl1Relations: List<Cl1RelationSnapshot>,
+            val cl1Issue: Cl1EventIssue?,
+        ) : Row
+
+        data class Cl1Relation(
+            val relation: Cl1RelationSnapshot,
+            val pendingOperations: List<Cl1PendingOperation>,
+        ) : Row
+
+        data class Cl1Notice(
+            val title: String,
+            val details: String,
         ) : Row
 
         data class Alarm(
@@ -92,6 +118,7 @@ class CalendarDiagnosticsAdapter(
     private var isRefreshing = false
     private var isFooterExpanded = false
     private val expandedEvents = mutableSetOf<CalendarOccurrenceKey>()
+    private val expandedRelations = mutableSetOf<String>()
 
     @SuppressLint("NotifyDataSetChanged")
     fun submitSnapshot(
@@ -100,6 +127,11 @@ class CalendarDiagnosticsAdapter(
     ) {
         isRefreshing = false
         expandedEvents.retainAll(snapshot.events.mapTo(mutableSetOf()) { it.key })
+        expandedRelations.retainAll(
+            snapshot.cl1?.discovery?.relations
+                ?.mapTo(mutableSetOf()) { it.key.slot.toHex() }
+                .orEmpty()
+        )
         rows = buildRows(snapshot, syncFailed)
         notifyDataSetChanged()
     }
@@ -134,6 +166,8 @@ class CalendarDiagnosticsAdapter(
             is Row.Overview -> VIEW_TYPE_OVERVIEW
             is Row.Section -> VIEW_TYPE_SECTION
             is Row.Event -> VIEW_TYPE_EVENT
+            is Row.Cl1Relation -> VIEW_TYPE_CL1_RELATION
+            is Row.Cl1Notice -> VIEW_TYPE_CL1_NOTICE
             is Row.Alarm -> VIEW_TYPE_ALARM
             is Row.Empty -> VIEW_TYPE_EMPTY
             Row.Footer -> VIEW_TYPE_FOOTER
@@ -153,6 +187,18 @@ class CalendarDiagnosticsAdapter(
 
             VIEW_TYPE_EVENT -> EventViewHolder(
                 ItemCalendarDiagnosticsEventBinding.inflate(inflater, parent, false)
+            )
+
+            VIEW_TYPE_CL1_RELATION -> Cl1RelationViewHolder(
+                ItemCalendarDiagnosticsCl1RelationBinding.inflate(
+                    inflater,
+                    parent,
+                    false
+                )
+            )
+
+            VIEW_TYPE_CL1_NOTICE -> Cl1NoticeViewHolder(
+                ItemCalendarDiagnosticsCl1NoticeBinding.inflate(inflater, parent, false)
             )
 
             VIEW_TYPE_ALARM -> AlarmViewHolder(
@@ -176,6 +222,8 @@ class CalendarDiagnosticsAdapter(
             is Row.Overview -> (holder as OverviewViewHolder).bind(row)
             is Row.Section -> (holder as SectionViewHolder).bind(row)
             is Row.Event -> (holder as EventViewHolder).bind(row)
+            is Row.Cl1Relation -> (holder as Cl1RelationViewHolder).bind(row)
+            is Row.Cl1Notice -> (holder as Cl1NoticeViewHolder).bind(row)
             is Row.Alarm -> (holder as AlarmViewHolder).bind(row)
             is Row.Empty -> (holder as EmptyViewHolder).bind(row)
             Row.Footer -> (holder as FooterViewHolder).bind()
@@ -204,6 +252,76 @@ class CalendarDiagnosticsAdapter(
                 )
             )
         )
+
+        snapshot.cl1?.let { cl1 ->
+            val relations = cl1.discovery.relations.sortedWith(
+                compareBy<Cl1RelationSnapshot> {
+                    it.source?.startMillis ?: it.mirror?.startMillis ?: Long.MAX_VALUE
+                }.thenBy { it.key.slot.toHex() }
+            )
+            add(
+                Row.Section(
+                    context.getString(R.string.cl1_relations_section, relations.size)
+                )
+            )
+            if (relations.isEmpty()) {
+                add(Row.Empty(context.getString(R.string.cl1_no_relations)))
+            } else {
+                relations.forEach { relation ->
+                    add(
+                        Row.Cl1Relation(
+                            relation = relation,
+                            pendingOperations = cl1.pendingOperations.filter {
+                                it.slotHex == relation.key.slot.toHex()
+                            }
+                        )
+                    )
+                }
+            }
+
+            if (cl1.discovery.eventIssues.isNotEmpty()) {
+                add(
+                    Row.Section(
+                        context.getString(
+                            R.string.cl1_notices_section,
+                            cl1.discovery.eventIssues.size
+                        )
+                    )
+                )
+                cl1.discovery.eventIssues
+                    .sortedBy { it.event.startMillis }
+                    .forEach { issue ->
+                        add(
+                            Row.Cl1Notice(
+                                title = context.getString(issue.state.titleResource()),
+                                details = formatCl1Issue(issue)
+                            )
+                        )
+                    }
+            }
+
+            if (cl1.pendingOperations.isNotEmpty()) {
+                add(
+                    Row.Section(
+                        context.getString(
+                            R.string.cl1_pending_section,
+                            cl1.pendingOperations.size
+                        )
+                    )
+                )
+                cl1.pendingOperations.forEach { operation ->
+                    add(
+                        Row.Cl1Notice(
+                            title = context.getString(
+                                R.string.cl1_pending_title,
+                                operation.type.operationLabel()
+                            ),
+                            details = formatPendingOperation(operation)
+                        )
+                    )
+                }
+            }
+        }
 
         add(
             Row.Section(
@@ -244,7 +362,7 @@ class CalendarDiagnosticsAdapter(
             if (displayWindowEvents.isEmpty()) {
                 add(Row.Empty(context.getString(R.string.calendar_diagnostics_empty)))
             } else {
-                appendEventRows(displayWindowEvents, snapshot.capturedAtMillis)
+                appendEventRows(displayWindowEvents, snapshot)
             }
 
             val relatedEventsOutsideWindow = snapshot.events.filterNot { it.isInDisplayWindow }
@@ -257,7 +375,7 @@ class CalendarDiagnosticsAdapter(
                         )
                     )
                 )
-                appendEventRows(relatedEventsOutsideWindow, snapshot.capturedAtMillis)
+                appendEventRows(relatedEventsOutsideWindow, snapshot)
             }
         }
 
@@ -326,14 +444,26 @@ class CalendarDiagnosticsAdapter(
 
     private fun MutableList<Row>.appendEventRows(
         events: List<CalendarEventDiagnostic>,
-        capturedAtMillis: Long,
+        snapshot: CalendarDiagnosticsSnapshot,
     ) {
+        val cl1Discovery = snapshot.cl1?.discovery
+        val cl1Events = cl1Discovery?.events?.associateBy { it.ref }.orEmpty()
+        val cl1Issues = cl1Discovery?.eventIssues?.associateBy { it.event.ref }.orEmpty()
         events.forEach { event ->
+            val ref = Cl1EventRef(
+                eventId = event.key.eventId,
+                calendarId = event.calendarId
+            )
             add(
                 Row.Event(
                     diagnostic = event,
-                    summary = event.alarmSummary(capturedAtMillis),
-                    capturedAtMillis = capturedAtMillis
+                    summary = event.alarmSummary(snapshot.capturedAtMillis),
+                    capturedAtMillis = snapshot.capturedAtMillis,
+                    cl1Event = cl1Events[ref],
+                    cl1Relations = cl1Discovery?.relations
+                        ?.filter { it.source?.ref == ref || it.mirror?.ref == ref }
+                        .orEmpty(),
+                    cl1Issue = cl1Issues[ref]
                 )
             )
         }
@@ -364,7 +494,20 @@ class CalendarDiagnosticsAdapter(
                             R.string.calendar_diagnostics_events_unavailable
                         )
                     }
-                text = "$alarmSummary$SEPARATOR$eventSummary"
+                text = buildList {
+                    add(alarmSummary)
+                    add(eventSummary)
+                    val relationCount = snapshot.cl1?.discovery?.relations?.size ?: 0
+                    if (relationCount > 0) {
+                        add(
+                            context.resources.getQuantityString(
+                                R.plurals.cl1_relation_label,
+                                relationCount,
+                                relationCount
+                            )
+                        )
+                    }
+                }.joinToString(SEPARATOR)
                 setTextColor(textColor)
             }
             calendarDiagnosticsOverviewMeta.apply {
@@ -529,6 +672,7 @@ class CalendarDiagnosticsAdapter(
                 calendarDiagnosticsEventDetailMetadata,
                 calendarDiagnosticsEventDetailTime,
                 calendarDiagnosticsEventDetailFlags,
+                calendarDiagnosticsEventDetailCl1,
                 calendarDiagnosticsEventDetailCurrentStateNote,
                 calendarDiagnosticsEventDetailAlarmsTitle,
                 calendarDiagnosticsEventDetailNoAlarms,
@@ -557,6 +701,10 @@ class CalendarDiagnosticsAdapter(
             )
             calendarDiagnosticsEventDetailTime.text = formatEventRange(event)
             calendarDiagnosticsEventDetailFlags.text = formatEventFlags(event)
+            calendarDiagnosticsEventDetailCl1.apply {
+                text = formatEventCl1Status(row)
+                beVisibleIf(text.isNotBlank())
+            }
             calendarDiagnosticsEventDetailDeclarations.text = context.getString(
                 R.string.calendar_diagnostics_event_detail_declarations,
                 summary.declarations
@@ -604,6 +752,134 @@ class CalendarDiagnosticsAdapter(
             val hasDescription = event.description.isNotBlank()
             calendarDiagnosticsEventDetailDescriptionHolder.beVisibleIf(hasDescription)
             calendarDiagnosticsEventDetailDescription.text = event.description
+        }
+    }
+
+    private inner class Cl1RelationViewHolder(
+        private val binding: ItemCalendarDiagnosticsCl1RelationBinding,
+    ) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(row: Row.Cl1Relation) = binding.apply {
+            val relation = row.relation
+            val relationId = relation.key.slot.toHex()
+            val isExpanded = relationId in expandedRelations
+            val stateLabel = context.getString(relation.state.labelResource())
+            val alarmPolicyShort = context.getString(
+                if (relation.suppressMirrorAlarm) {
+                    R.string.cl1_alarm_policy_source_short
+                } else {
+                    R.string.cl1_alarm_policy_autonomous_short
+                }
+            )
+            root.setBackgroundColor(backgroundColor)
+            calendarDiagnosticsCl1RelationColor.apply {
+                setCardBackgroundColor(
+                    relation.mirror?.calendar?.color
+                        ?: relation.source?.calendar?.color
+                        ?: primaryColor
+                )
+                strokeColor = textColor
+            }
+            calendarDiagnosticsCl1RelationTitle.apply {
+                text = context.getString(
+                    R.string.cl1_relation_title,
+                    relation.source?.title?.takeIf { it.isNotBlank() }
+                        ?: context.getString(R.string.cl1_source_unavailable),
+                    relation.mirror?.title?.takeIf { it.isNotBlank() }
+                        ?: context.getString(R.string.cl1_copy_unavailable)
+                )
+                setTextColor(textColor)
+            }
+            calendarDiagnosticsCl1RelationSummary.apply {
+                text = context.getString(
+                    R.string.cl1_relation_summary,
+                    stateLabel,
+                    alarmPolicyShort
+                )
+                setTextColor(
+                    if (relation.state == Cl1RelationState.ACTIVE) {
+                        textColor
+                    } else {
+                        primaryColor
+                    }
+                )
+            }
+            calendarDiagnosticsCl1RelationExpand.apply {
+                imageTintList = ColorStateList.valueOf(primaryColor)
+                rotation = if (isExpanded) 180f else 0f
+                contentDescription = context.getString(
+                    if (isExpanded) {
+                        R.string.cl1_hide_relation_details
+                    } else {
+                        R.string.cl1_show_relation_details
+                    }
+                )
+            }
+            calendarDiagnosticsCl1RelationHeader.apply {
+                contentDescription = calendarDiagnosticsCl1RelationExpand.contentDescription
+                setOnClickListener {
+                    if (!expandedRelations.add(relationId)) {
+                        expandedRelations.remove(relationId)
+                    }
+                    val position = bindingAdapterPosition
+                    if (position != RecyclerView.NO_POSITION) {
+                        notifyItemChanged(position)
+                    }
+                }
+            }
+            calendarDiagnosticsCl1RelationDetails.beVisibleIf(isExpanded)
+            if (isExpanded) {
+                calendarDiagnosticsCl1RelationDetails.apply {
+                    setCardBackgroundColor(backgroundColor)
+                    strokeColor = primaryColor
+                }
+                listOf(
+                    calendarDiagnosticsCl1RelationExplanation,
+                    calendarDiagnosticsCl1RelationSource,
+                    calendarDiagnosticsCl1RelationMirror,
+                    calendarDiagnosticsCl1RelationAlarmPolicy,
+                    calendarDiagnosticsCl1RelationOverrides,
+                    calendarDiagnosticsCl1RelationTechnical
+                ).forEach { it.setTextColor(textColor) }
+                calendarDiagnosticsCl1RelationExplanation.text =
+                    context.getString(relation.state.explanationResource())
+                calendarDiagnosticsCl1RelationSource.text = formatRelationEvent(
+                    R.string.cl1_source_label,
+                    relation.source
+                )
+                calendarDiagnosticsCl1RelationMirror.text = formatRelationEvent(
+                    R.string.cl1_copy_label,
+                    relation.mirror
+                )
+                calendarDiagnosticsCl1RelationAlarmPolicy.text = context.getString(
+                    if (relation.suppressMirrorAlarm) {
+                        R.string.cl1_alarm_policy_source
+                    } else {
+                        R.string.cl1_alarm_policy_autonomous
+                    }
+                )
+                calendarDiagnosticsCl1RelationOverrides.text =
+                    formatOverrides(relation)
+                calendarDiagnosticsCl1RelationTechnical.text =
+                    formatRelationTechnical(row)
+            }
+            calendarDiagnosticsCl1RelationDivider.setBackgroundColor(textColor)
+        }
+    }
+
+    private inner class Cl1NoticeViewHolder(
+        private val binding: ItemCalendarDiagnosticsCl1NoticeBinding,
+    ) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(row: Row.Cl1Notice) = binding.apply {
+            root.setBackgroundColor(backgroundColor)
+            calendarDiagnosticsCl1NoticeTitle.apply {
+                text = row.title
+                setTextColor(primaryColor)
+            }
+            calendarDiagnosticsCl1NoticeDetails.apply {
+                text = row.details
+                setTextColor(textColor)
+            }
+            calendarDiagnosticsCl1NoticeDivider.setBackgroundColor(textColor)
         }
     }
 
@@ -850,6 +1126,299 @@ class CalendarDiagnosticsAdapter(
                     notifyItemChanged(position)
                 }
             }
+        }
+    }
+
+    private fun formatEventCl1Status(row: Row.Event): String {
+        row.cl1Issue?.let { issue ->
+            return context.getString(
+                R.string.cl1_event_issue_status,
+                context.getString(issue.state.titleResource())
+            )
+        }
+        return when (
+            val parsed = row.cl1Event?.parsedDescription
+        ) {
+            is Cl1Description.Valid -> when (val payload = parsed.payload) {
+                is Cl1Payload.Source -> context.getString(
+                    R.string.cl1_event_source_status,
+                    payload.records.size
+                )
+
+                is Cl1Payload.Mirror -> {
+                    val state = row.cl1Relations.firstOrNull()?.state
+                        ?: Cl1RelationState.UNRESOLVED
+                    context.getString(
+                        R.string.cl1_event_copy_status,
+                        context.getString(state.labelResource())
+                    )
+                }
+            }
+
+            is Cl1Description.UnsupportedVersion -> context.getString(
+                R.string.cl1_event_issue_status,
+                context.getString(R.string.cl1_issue_unsupported_title)
+            )
+
+            is Cl1Description.Corrupt -> context.getString(
+                R.string.cl1_event_issue_status,
+                context.getString(R.string.cl1_issue_corrupt_title)
+            )
+
+            is Cl1Description.None,
+            null,
+            -> ""
+        }
+    }
+
+    private fun formatCl1Issue(issue: Cl1EventIssue): String {
+        val event = issue.event
+        val title = event.title?.takeIf { it.isNotBlank() }
+            ?: context.getString(R.string.calendar_untitled_event)
+        val calendar = event.calendar.displayName.ifBlank {
+            context.getString(
+                R.string.calendar_diagnostics_calendar_fallback,
+                event.ref.calendarId
+            )
+        }
+        return context.getString(
+            R.string.cl1_issue_details,
+            title,
+            calendar,
+            formatDateTime(event.startMillis),
+            issue.detail.orEmpty()
+        )
+    }
+
+    private fun formatPendingOperation(operation: Cl1PendingOperation): String {
+        val error = operation.lastError?.takeIf { it.isNotBlank() }?.let {
+            context.getString(R.string.cl1_pending_error, it)
+        }.orEmpty()
+        return context.getString(
+            R.string.cl1_pending_operation_summary,
+            operation.type.operationLabel(),
+            operation.phase,
+            operation.attempts,
+            error
+        )
+    }
+
+    private fun formatRelationEvent(
+        roleResource: Int,
+        event: Cl1EventSnapshot?,
+    ): String {
+        val role = context.getString(roleResource)
+        if (event == null) {
+            return context.getString(R.string.cl1_relation_event_unavailable, role)
+        }
+        val calendar = event.calendar.displayName.ifBlank {
+            context.getString(
+                R.string.calendar_diagnostics_calendar_fallback,
+                event.ref.calendarId
+            )
+        }
+        return context.getString(
+            R.string.cl1_relation_event,
+            role,
+            calendar,
+            formatDateTime(event.startMillis),
+            event.ref.eventId
+        )
+    }
+
+    private fun formatOverrides(relation: Cl1RelationSnapshot): String {
+        val payload = relation.mirrorPayload
+        if (payload == null) {
+            return context.getString(
+                R.string.cl1_overrides_summary,
+                context.getString(R.string.cl1_title_inherited),
+                context.getString(R.string.cl1_start_inherited),
+                context.getString(R.string.cl1_duration_inherited)
+            )
+        }
+        val title = when (val override = payload.titleOverride) {
+            Cl1TitleOverride.Inherited ->
+                context.getString(R.string.cl1_title_inherited)
+
+            is Cl1TitleOverride.Replacement -> context.getString(
+                R.string.cl1_title_replacement,
+                override.value.compactForDiagnostics()
+            )
+
+            is Cl1TitleOverride.Template -> context.getString(
+                R.string.cl1_title_template,
+                override.value.compactForDiagnostics()
+            )
+        }
+        val start = payload.startOffsetSeconds?.let {
+            context.getString(
+                R.string.cl1_start_offset,
+                formatSignedSeconds(it)
+            )
+        } ?: context.getString(R.string.cl1_start_inherited)
+        val duration = when (val override = payload.durationOverride) {
+            Cl1DurationOverride.Inherited ->
+                context.getString(R.string.cl1_duration_inherited)
+
+            is Cl1DurationOverride.Fixed -> context.getString(
+                R.string.cl1_duration_fixed,
+                formatUnsignedSeconds(override.seconds)
+            )
+
+            is Cl1DurationOverride.Delta -> context.getString(
+                R.string.cl1_duration_delta,
+                formatSignedSeconds(override.seconds)
+            )
+        }
+        return context.getString(
+            R.string.cl1_overrides_summary,
+            title,
+            start,
+            duration
+        )
+    }
+
+    private fun formatRelationTechnical(row: Row.Cl1Relation): String {
+        val relation = row.relation
+        return buildList {
+            add(
+                context.getString(
+                    R.string.cl1_relation_identifier,
+                    "${relation.key.slot.toHex().take(12)}…"
+                )
+            )
+            relation.detail?.takeIf { it.isNotBlank() }?.let {
+                add(context.getString(R.string.cl1_relation_detail, it))
+            }
+            if (row.pendingOperations.isEmpty()) {
+                add(context.getString(R.string.cl1_no_pending_operation))
+            } else {
+                row.pendingOperations.forEach {
+                    add(formatPendingOperation(it))
+                }
+            }
+        }.joinToString("\n")
+    }
+
+    private fun formatSignedSeconds(value: Long): String {
+        val prefix = if (value > 0) "+" else if (value < 0) "−" else ""
+        return prefix + formatSecondsMagnitude(value.absoluteValue)
+    }
+
+    private fun formatUnsignedSeconds(value: ULong): String {
+        return if (value <= Long.MAX_VALUE.toULong()) {
+            formatSecondsMagnitude(value.toLong())
+        } else {
+            "$value s"
+        }
+    }
+
+    private fun formatSecondsMagnitude(seconds: Long): String {
+        return when {
+            seconds == 0L -> context.getString(
+                R.string.calendar_diagnostics_seconds_short,
+                0
+            )
+
+            seconds % SECONDS_PER_DAY == 0L ->
+                context.getString(
+                    R.string.calendar_diagnostics_days_short,
+                    seconds / SECONDS_PER_DAY
+                )
+
+            seconds % SECONDS_PER_HOUR == 0L ->
+                context.getString(
+                    R.string.calendar_diagnostics_hours_short,
+                    seconds / SECONDS_PER_HOUR
+                )
+
+            seconds % SECONDS_PER_MINUTE == 0L ->
+                context.getString(
+                    R.string.calendar_diagnostics_minutes_short,
+                    seconds / SECONDS_PER_MINUTE
+                )
+
+            else -> context.getString(
+                R.string.calendar_diagnostics_seconds_short,
+                seconds
+            )
+        }
+    }
+
+    private fun String.compactForDiagnostics(): String {
+        return replace('\n', ' ').take(CL1_VALUE_PREVIEW_LENGTH)
+    }
+
+    private fun String.operationLabel(): String {
+        val resource = when (this) {
+            "create" -> R.string.cl1_operation_create
+            "repair" -> R.string.cl1_operation_repair
+            "sync" -> R.string.cl1_operation_sync
+            "restore" -> R.string.cl1_operation_restore
+            "applyCopy" -> R.string.cl1_operation_apply_copy
+            "convertOverrides" -> R.string.cl1_operation_convert
+            "unlink" -> R.string.cl1_operation_unlink
+            "changeDestination" -> R.string.cl1_operation_change_destination
+            "deleteSource" -> R.string.cl1_operation_delete_source
+            else -> null
+        }
+        return if (resource == null) this else context.getString(resource)
+    }
+
+    private fun Cl1EventIssueState.titleResource(): Int {
+        return when (this) {
+            Cl1EventIssueState.UNSUPPORTED_VERSION ->
+                R.string.cl1_issue_unsupported_title
+
+            Cl1EventIssueState.BLOCK_CORRUPT ->
+                R.string.cl1_issue_corrupt_title
+        }
+    }
+
+    private fun Cl1RelationState.labelResource(): Int {
+        return when (this) {
+            Cl1RelationState.ACTIVE -> R.string.cl1_state_active
+            Cl1RelationState.SOURCE_MODIFIED -> R.string.cl1_state_source_modified
+            Cl1RelationState.COPY_MODIFIED -> R.string.cl1_state_copy_modified
+            Cl1RelationState.CONCURRENT_CONFLICT ->
+                R.string.cl1_state_concurrent_conflict
+
+            Cl1RelationState.MISSING_OR_INACCESSIBLE -> R.string.cl1_state_missing
+            Cl1RelationState.UNRESOLVED -> R.string.cl1_state_unresolved
+            Cl1RelationState.ORPHAN -> R.string.cl1_state_orphan
+            Cl1RelationState.RECORD_CORRUPT -> R.string.cl1_state_record_corrupt
+            Cl1RelationState.RELATION_CONFLICT ->
+                R.string.cl1_state_relation_conflict
+
+            Cl1RelationState.INCOMPATIBLE -> R.string.cl1_state_incompatible
+        }
+    }
+
+    private fun Cl1RelationState.explanationResource(): Int {
+        return when (this) {
+            Cl1RelationState.ACTIVE -> R.string.cl1_state_active_explanation
+            Cl1RelationState.SOURCE_MODIFIED ->
+                R.string.cl1_state_source_modified_explanation
+
+            Cl1RelationState.COPY_MODIFIED ->
+                R.string.cl1_state_copy_modified_explanation
+
+            Cl1RelationState.CONCURRENT_CONFLICT ->
+                R.string.cl1_state_concurrent_conflict_explanation
+
+            Cl1RelationState.MISSING_OR_INACCESSIBLE ->
+                R.string.cl1_state_missing_explanation
+
+            Cl1RelationState.UNRESOLVED -> R.string.cl1_state_unresolved_explanation
+            Cl1RelationState.ORPHAN -> R.string.cl1_state_orphan_explanation
+            Cl1RelationState.RECORD_CORRUPT ->
+                R.string.cl1_state_record_corrupt_explanation
+
+            Cl1RelationState.RELATION_CONFLICT ->
+                R.string.cl1_state_relation_conflict_explanation
+
+            Cl1RelationState.INCOMPATIBLE ->
+                R.string.cl1_state_incompatible_explanation
         }
     }
 
@@ -1161,11 +1730,17 @@ class CalendarDiagnosticsAdapter(
         const val VIEW_TYPE_OVERVIEW = 0
         const val VIEW_TYPE_SECTION = 1
         const val VIEW_TYPE_EVENT = 2
-        const val VIEW_TYPE_ALARM = 3
-        const val VIEW_TYPE_EMPTY = 4
-        const val VIEW_TYPE_FOOTER = 5
+        const val VIEW_TYPE_CL1_RELATION = 3
+        const val VIEW_TYPE_CL1_NOTICE = 4
+        const val VIEW_TYPE_ALARM = 5
+        const val VIEW_TYPE_EMPTY = 6
+        const val VIEW_TYPE_FOOTER = 7
         const val MINUTES_PER_HOUR = 60L
         const val MINUTES_PER_DAY = 24L * MINUTES_PER_HOUR
+        const val SECONDS_PER_MINUTE = 60L
+        const val SECONDS_PER_HOUR = 60L * SECONDS_PER_MINUTE
+        const val SECONDS_PER_DAY = 24L * SECONDS_PER_HOUR
+        const val CL1_VALUE_PREVIEW_LENGTH = 80
         const val SEPARATOR = " · "
     }
 }

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/calendar_diagnostics_cl1_relation_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:minHeight="52dp"
+        android:orientation="horizontal"
+        android:paddingVertical="2dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/calendar_diagnostics_cl1_relation_color"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_marginEnd="@dimen/small_margin"
+            app:cardCornerRadius="5dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/color_primary"
+            app:strokeWidth="1dp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_cl1_relation_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textStyle="bold"
+                tools:text="Team meeting → Team meeting" />
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_cl1_relation_summary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Synchronized · alarms from source only" />
+
+        </LinearLayout>
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/calendar_diagnostics_cl1_relation_expand"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="2dp"
+            android:contentDescription="@string/cl1_show_relation_details"
+            android:importantForAccessibility="no"
+            android:padding="6dp"
+            android:src="@drawable/ic_expand_more_vector" />
+
+    </LinearLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/calendar_diagnostics_cl1_relation_details"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="@dimen/small_margin"
+        android:visibility="gone"
+        app:cardCornerRadius="@dimen/small_margin"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/color_primary"
+        app:strokeWidth="1dp"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/normal_margin">
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_cl1_relation_explanation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                tools:text="The source and copy match." />
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_cl1_relation_source"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/small_margin"
+                tools:text="Source · Personal · Jul 24, 10:00 · event #42" />
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_cl1_relation_mirror"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                tools:text="Copy · Work · Jul 24, 10:00 · event #86" />
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_cl1_relation_alarm_policy"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/small_margin"
+                tools:text="Alarm behavior: only the source creates ClockT alarms." />
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_cl1_relation_overrides"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                tools:text="Overrides: inherited title · inherited start · inherited duration" />
+
+            <org.fossify.commons.views.MyTextView
+                android:id="@+id/calendar_diagnostics_cl1_relation_technical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/small_margin"
+                android:alpha="0.65"
+                android:textIsSelectable="true"
+                tools:text="Relation: 000102030405… · no pending operation" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <View
+        android:id="@+id/calendar_diagnostics_cl1_relation_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:alpha="0.12" />
+
+</LinearLayout>

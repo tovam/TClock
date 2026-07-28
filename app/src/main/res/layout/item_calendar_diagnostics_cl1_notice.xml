@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:minHeight="48dp"
+    android:orientation="vertical"
+    android:paddingVertical="4dp">
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/calendar_diagnostics_cl1_notice_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textStyle="bold"
+        tools:text="CL1 block cannot be read" />
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/calendar_diagnostics_cl1_notice_details"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:alpha="0.72"
+        android:ellipsize="end"
+        android:maxLines="2"
+        tools:text="Meeting · Personal · corrupt block" />
+
+    <View
+        android:id="@+id/calendar_diagnostics_cl1_notice_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="4dp"
+        android:alpha="0.12" />
+
+</LinearLayout>
