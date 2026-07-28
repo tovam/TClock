@@ -50,6 +50,30 @@ class Cl1OperationEngineTest {
     }
 
     @Test
+    fun `a lost create token falls back to the mirror slot without a duplicate`() {
+        val adapter = MemoryCalendarAdapter(
+            lostFirstCreateResponse = true,
+            forgetCreateTokenAfterLostResponse = true
+        )
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+
+        assertTrue(
+            engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF) is
+                Cl1OperationResult.Pending
+        )
+        val resumed = engine.resumePending().single()
+
+        assertTrue(resumed is Cl1OperationResult.Completed)
+        assertEquals(2, adapter.allEvents().size)
+        assertEquals(
+            Cl1RelationState.ACTIVE,
+            Cl1Discovery.build(adapter.allEvents()).relations.single().state
+        )
+        assertTrue(storage.listPendingOperations().isEmpty())
+    }
+
+    @Test
     fun `an ambiguous create token becomes a durable conflict`() {
         val adapter = MemoryCalendarAdapter(createConflict = true)
         val storage = MemoryStorage()
@@ -403,6 +427,7 @@ class Cl1OperationEngineTest {
         private var lostFirstCreateResponse: Boolean = false,
         private val sourceTitleAfterCreate: String? = null,
         private val createConflict: Boolean = false,
+        private val forgetCreateTokenAfterLostResponse: Boolean = false,
     ) : Cl1CalendarAdapter {
         private val sourceCalendar = calendar(SOURCE_CALENDAR_ID)
         private val mirrorCalendar = calendar(MIRROR_CALENDAR_ID)
@@ -546,6 +571,9 @@ class Cl1OperationEngineTest {
             sourceTitleAfterCreate?.let(::editSourceTitle)
             return if (lostFirstCreateResponse) {
                 lostFirstCreateResponse = false
+                if (forgetCreateTokenAfterLostResponse) {
+                    createdByToken.remove(createToken)
+                }
                 Cl1CreateResult.Failed("lostResponse")
             } else {
                 Cl1CreateResult.Created(created)

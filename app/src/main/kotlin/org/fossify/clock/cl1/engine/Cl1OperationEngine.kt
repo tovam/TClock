@@ -285,6 +285,21 @@ class Cl1OperationEngine(
 
             var mirror = journal.mirror?.toDomain()?.let(adapter::readEvent)
                 ?: adapter.findCreatedEvent(destination, journal.createTokenHex)
+            if (mirror == null) {
+                val slotMatches = findMirrorsBySlot(
+                    destination = destination,
+                    slot = desired.record.slot,
+                    expected = desired.write.canonicalEvent
+                )
+                if (slotMatches.size > 1) {
+                    return conflict(
+                        operation,
+                        Cl1CreatePhases.CONFLICT,
+                        "mirrorCreate:slotAmbiguous"
+                    )
+                }
+                mirror = slotMatches.singleOrNull()
+            }
             if (mirror != null && journal.mirror?.toDomain() != mirror.ref) {
                 journal = journal.copy(mirror = Cl1EventRefDto.from(mirror.ref))
                 operation = checkpoint(
@@ -731,6 +746,43 @@ class Cl1OperationEngine(
         }
     }
 
+    private fun findMirrorsBySlot(
+        destination: Cl1CalendarDescriptor,
+        slot: Cl1Bytes,
+        expected: Cl1CanonicalEvent,
+    ): List<Cl1EventSnapshot> {
+        val begin = secondsToMillisSaturated(
+            minOf(expected.startUnixSeconds, expected.endUnixSeconds)
+        ).saturatedMinus(CREATE_DISCOVERY_RADIUS_MILLIS)
+        val end = secondsToMillisSaturated(
+            maxOf(expected.startUnixSeconds, expected.endUnixSeconds)
+        ).saturatedPlus(CREATE_DISCOVERY_RADIUS_MILLIS)
+        return adapter.listEvents(begin, end)
+            .asSequence()
+            .filter { it.ref.calendarId == destination.ref.calendarId }
+            .filter { event ->
+                val payload = event.validMirrorPayload() ?: return@filter false
+                Cl1Crypto.deriveSlot(payload.secret) == slot
+            }
+            .toList()
+    }
+
+    private fun secondsToMillisSaturated(seconds: Long): Long {
+        return when {
+            seconds > Long.MAX_VALUE / MILLIS_PER_SECOND -> Long.MAX_VALUE
+            seconds < Long.MIN_VALUE / MILLIS_PER_SECOND -> Long.MIN_VALUE
+            else -> seconds * MILLIS_PER_SECOND
+        }
+    }
+
+    private fun Long.saturatedMinus(value: Long): Long {
+        return if (this < Long.MIN_VALUE + value) Long.MIN_VALUE else this - value
+    }
+
+    private fun Long.saturatedPlus(value: Long): Long {
+        return if (this > Long.MAX_VALUE - value) Long.MAX_VALUE else this + value
+    }
+
     private fun Cl1EventSnapshot.sourceView(): SourceView? {
         return when (val parsed = parsedDescription) {
             is Cl1Description.None -> SourceView(
@@ -983,6 +1035,9 @@ class Cl1OperationEngine(
         const val MAX_CREATE_RETRIES = 8
         const val SECRET_GENERATION_RETRIES = 8
         const val CREATE_TOKEN_BYTES = 16
+        const val MILLIS_PER_SECOND = 1_000L
+        const val CREATE_DISCOVERY_RADIUS_MILLIS =
+            30L * 24L * 60L * 60L * MILLIS_PER_SECOND
         val JSON = Json {
             encodeDefaults = true
             ignoreUnknownKeys = true
