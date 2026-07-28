@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.datepicker.MaterialDatePicker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -16,6 +17,7 @@ import kotlinx.coroutines.withContext
 import org.fossify.clock.R
 import org.fossify.clock.adapters.CalendarDiagnosticsAdapter
 import org.fossify.clock.cl1.Cl1CanonicalEvent
+import org.fossify.clock.cl1.Cl1Description
 import org.fossify.clock.cl1.Cl1TitleOverride
 import org.fossify.clock.cl1.engine.AndroidCl1Coordinator
 import org.fossify.clock.cl1.engine.Cl1Coordinator
@@ -41,6 +43,9 @@ import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.updateTextColors
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 class CalendarDiagnosticsFragment : Fragment() {
     private var _binding: FragmentCalendarDiagnosticsBinding? = null
@@ -83,7 +88,8 @@ class CalendarDiagnosticsFragment : Fragment() {
                 calendarPermissionLauncher.launch(CalendarAlarmSync.REQUIRED_PERMISSIONS)
             },
             onCreateCl1Copy = ::showCreateCl1Copy,
-            onCl1RelationActions = ::showCl1RelationActions
+            onCl1RelationActions = ::showCl1RelationActions,
+            onReconcileCl1 = ::showCl1ReconciliationPicker
         )
         binding.calendarDiagnosticsList.adapter = adapter
         binding.calendarDiagnosticsStateRetry.setOnClickListener {
@@ -226,6 +232,93 @@ class CalendarDiagnosticsFragment : Fragment() {
                     )
                 }
             }
+        }
+    }
+
+    private fun showCl1ReconciliationPicker() {
+        val picker = MaterialDatePicker.Builder.dateRangePicker()
+            .setTitleText(R.string.cl1_reconcile_period_title)
+            .build()
+        picker.addOnPositiveButtonClickListener { selection ->
+            val firstDay = selection.first
+            val lastDay = selection.second
+            if (firstDay != null && lastDay != null) {
+                executeCl1Reconciliation(
+                    beginMillis = pickerDateToLocalStart(firstDay),
+                    endMillis = pickerDateToLocalEnd(lastDay)
+                )
+            }
+        }
+        picker.show(parentFragmentManager, CL1_RECONCILE_PICKER_TAG)
+    }
+
+    private fun executeCl1Reconciliation(
+        beginMillis: Long,
+        endMillis: Long,
+    ) {
+        val applicationContext = requireContext().applicationContext
+        loadJob?.cancel()
+        loadJob = viewLifecycleOwner.lifecycleScope.launch {
+            showLoading()
+            val outcome = withContext(Dispatchers.IO) {
+                runCl1Reconciliation(
+                    applicationContext = applicationContext,
+                    beginMillis = beginMillis,
+                    endMillis = endMillis
+                )
+            }
+            if (_binding == null) {
+                return@launch
+            }
+            if (outcome == null) {
+                showUnexpectedError()
+            } else {
+                render(outcome.loadOutcome)
+                Toast.makeText(
+                    requireContext(),
+                    getString(
+                        R.string.cl1_reconcile_completed,
+                        outcome.eventCount,
+                        outcome.relationCount,
+                        outcome.pendingCount
+                    ),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun runCl1Reconciliation(
+        applicationContext: android.content.Context,
+        beginMillis: Long,
+        endMillis: Long,
+    ): Cl1ReconciliationOutcome? {
+        return try {
+            AndroidCl1Coordinator.from(applicationContext).synchronize(
+                beginMillis = beginMillis,
+                endMillis = endMillis
+            )
+            val syncResult = CalendarAlarmSync.sync(applicationContext)
+            if (!syncResult.permissionMissing) {
+                CalendarSyncScheduler.schedule(applicationContext)
+            }
+            val snapshot = CalendarAlarmSync.loadDiagnostics(applicationContext)
+            val cl1 = snapshot.cl1
+            Cl1ReconciliationOutcome(
+                eventCount = cl1?.discovery?.events
+                    ?.count { it.parsedDescription !is Cl1Description.None }
+                    ?: 0,
+                relationCount = cl1?.discovery?.relations?.size ?: 0,
+                pendingCount = cl1?.pendingOperations?.size ?: 0,
+                loadOutcome = LoadOutcome(
+                    snapshot = snapshot,
+                    syncFailed = syncResult.failed
+                )
+            )
+        } catch (exception: Exception) {
+            Log.e(TAG, "Unable to reconcile CL1 relationships", exception)
+            null
         }
     }
 
@@ -601,6 +694,25 @@ class CalendarDiagnosticsFragment : Fragment() {
         }
     }
 
+    private fun pickerDateToLocalStart(pickerMillis: Long): Long {
+        val date = Instant.ofEpochMilli(pickerMillis)
+            .atZone(ZoneOffset.UTC)
+            .toLocalDate()
+        return date.atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+    }
+
+    private fun pickerDateToLocalEnd(pickerMillis: Long): Long {
+        val dateAfterSelection = Instant.ofEpochMilli(pickerMillis)
+            .atZone(ZoneOffset.UTC)
+            .toLocalDate()
+            .plusDays(1)
+        return dateAfterSelection.atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli() - 1L
+    }
+
     private fun Cl1RelationUiAction.labelResource(): Int {
         return when (this) {
             Cl1RelationUiAction.REPAIR -> R.string.cl1_action_repair
@@ -630,8 +742,16 @@ class CalendarDiagnosticsFragment : Fragment() {
         val loadOutcome: LoadOutcome,
     )
 
+    private data class Cl1ReconciliationOutcome(
+        val eventCount: Int,
+        val relationCount: Int,
+        val pendingCount: Int,
+        val loadOutcome: LoadOutcome,
+    )
+
     private companion object {
         const val TAG = "CalendarDiagnosticsUI"
+        const val CL1_RECONCILE_PICKER_TAG = "cl1-reconcile-period"
         const val SOURCE_TITLE_TOKEN = "{source}"
     }
 }

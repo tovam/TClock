@@ -59,6 +59,7 @@ class CalendarDiagnosticsAdapter(
     private val onGrantCalendarPermission: () -> Unit,
     private val onCreateCl1Copy: (Cl1EventSnapshot) -> Unit,
     private val onCl1RelationActions: (Cl1RelationSnapshot) -> Unit,
+    private val onReconcileCl1: () -> Unit,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private sealed interface Row {
         data class Overview(
@@ -68,7 +69,10 @@ class CalendarDiagnosticsAdapter(
             val issues: OverviewIssues,
         ) : Row
 
-        data class Section(val title: String) : Row
+        data class Section(
+            val title: String,
+            val showCl1Reconcile: Boolean = false,
+        ) : Row
 
         data class Event(
             val diagnostic: CalendarEventDiagnostic,
@@ -269,7 +273,11 @@ class CalendarDiagnosticsAdapter(
             )
             add(
                 Row.Section(
-                    context.getString(R.string.cl1_relations_section, relations.size)
+                    title = context.getString(
+                        R.string.cl1_relations_section,
+                        relations.size
+                    ),
+                    showCl1Reconcile = true
                 )
             )
             if (relations.isEmpty()) {
@@ -597,9 +605,21 @@ class CalendarDiagnosticsAdapter(
         private val binding: ItemCalendarDiagnosticsSectionBinding,
     ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(row: Row.Section) {
-            binding.root.apply {
+            binding.root.setBackgroundColor(backgroundColor)
+            binding.calendarDiagnosticsSectionTitle.apply {
                 text = row.title
                 setTextColor(textColor)
+            }
+            binding.calendarDiagnosticsSectionAction.apply {
+                beVisibleIf(row.showCl1Reconcile)
+                setTextColor(primaryColor)
+                setOnClickListener(
+                    if (row.showCl1Reconcile) {
+                        View.OnClickListener { onReconcileCl1() }
+                    } else {
+                        null
+                    }
+                )
             }
         }
     }

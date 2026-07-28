@@ -249,6 +249,9 @@
     <string name="cl1_operation_conflict">ClockT stopped before overwriting a concurrent change: %1$s</string>
     <string name="cl1_operation_rejected">The requested CL1 operation is not safe in the current state: %1$s</string>
     <string name="cl1_operation_failed">The CL1 operation could not be started.</string>
+    <string name="cl1_reconcile">Reconcile</string>
+    <string name="cl1_reconcile_period_title">Period to scan for CL1 links</string>
+    <string name="cl1_reconcile_completed">CL1 scan complete: %1$d protocol events, %2$d relationships and %3$d pending operations. Each discovered event was also searched within ±30 days.</string>
     <plurals name="cl1_relation_label">
         <item quantity="one">%1$d CL1 linked copy</item>
         <item quantity="other">%1$d CL1 linked copies</item>

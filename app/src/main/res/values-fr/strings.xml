@@ -267,6 +267,9 @@
     <string name="cl1_operation_conflict">ClockT s’est arrêté avant d’écraser une modification concurrente : %1$s</string>
     <string name="cl1_operation_rejected">L’opération CL1 demandée n’est pas sûre dans l’état actuel : %1$s</string>
     <string name="cl1_operation_failed">L’opération CL1 n’a pas pu être démarrée.</string>
+    <string name="cl1_reconcile">Réconcilier</string>
+    <string name="cl1_reconcile_period_title">Période à scanner pour les liens CL1</string>
+    <string name="cl1_reconcile_completed">Scan CL1 terminé : %1$d événements de protocole, %2$d relations et %3$d opérations en attente. Chaque événement découvert a aussi été recherché dans une fenêtre de ±30 jours.</string>
     <plurals name="cl1_relation_label">
         <item quantity="one">%1$d copie liée CL1</item>
         <item quantity="other">%1$d copies liées CL1</item>
