@@ -280,6 +280,33 @@ class Cl1OperationEngineTest {
     }
 
     @Test
+    fun `unlink stops if the mirror block changes after the source is detached`() {
+        val adapter = MemoryCalendarAdapter()
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+        engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF)
+        val active = Cl1Discovery.build(adapter.allEvents()).relations.single()
+        adapter.mutateMirrorBlockOnMirrorRead(readNumber = 2)
+
+        val result = engine.unlink(active)
+
+        assertTrue(result is Cl1OperationResult.Conflict)
+        val source = requireNotNull(adapter.allEvents().singleOrNull {
+            it.ref == SOURCE_REF
+        })
+        val mirror = adapter.allEvents().single {
+            it.ref.calendarId == MIRROR_CALENDAR_ID
+        }
+        assertTrue(source.parsedDescription is Cl1Description.None)
+        assertTrue(mirror.parsedDescription is Cl1Description.Valid)
+        assertTrue(storage.listConfirmedOrphanSlots().isEmpty())
+        assertEquals(
+            "mirrorBlockChanged",
+            storage.listPendingOperations().single().lastError
+        )
+    }
+
+    @Test
     fun `destination change rotates the secret moves the mirror then replaces record`() {
         val adapter = MemoryCalendarAdapter()
         val storage = MemoryStorage()
@@ -373,6 +400,7 @@ class Cl1OperationEngineTest {
         private val createdByToken = HashMap<String, Cl1EventRef>()
         private var nextId = 100L
         private var editMirrorBeforeCalendarList = false
+        private var mirrorReadsBeforeBlockMutation: Int? = null
         val deletionOrder = ArrayList<Cl1EventRef>()
 
         fun allEvents(): List<Cl1EventSnapshot> = events.values.toList()
@@ -415,6 +443,11 @@ class Cl1OperationEngineTest {
             editMirrorBeforeCalendarList = true
         }
 
+        fun mutateMirrorBlockOnMirrorRead(readNumber: Int) {
+            require(readNumber > 0)
+            mirrorReadsBeforeBlockMutation = readNumber
+        }
+
         override fun listCalendars(): List<Cl1CalendarDescriptor> {
             if (editMirrorBeforeCalendarList) {
                 editMirrorBeforeCalendarList = false
@@ -433,7 +466,34 @@ class Cl1OperationEngineTest {
             }
         }
 
-        override fun readEvent(ref: Cl1EventRef): Cl1EventSnapshot? = events[ref]
+        override fun readEvent(ref: Cl1EventRef): Cl1EventSnapshot? {
+            if (ref.calendarId == MIRROR_CALENDAR_ID) {
+                mirrorReadsBeforeBlockMutation?.let { remaining ->
+                    if (remaining == 1) {
+                        mirrorReadsBeforeBlockMutation = null
+                        mutateMirrorBlock()
+                    } else {
+                        mirrorReadsBeforeBlockMutation = remaining - 1
+                    }
+                }
+            }
+            return events[ref]
+        }
+
+        private fun mutateMirrorBlock() {
+            val ref = events.keys.single { it.calendarId == MIRROR_CALENDAR_ID }
+            val current = requireNotNull(events[ref])
+            val parsed = current.parsedDescription as Cl1Description.Valid
+            val payload = parsed.payload as Cl1Payload.Mirror
+            val changed = payload.copy(
+                revision = Cl1Bytes.copyOf(
+                    ByteArray(Cl1Limits.REVISION_BYTES) { 0x7f }
+                )
+            )
+            events[ref] = current.copy(
+                description = Cl1Armor.compose(parsed.userDescription, changed)
+            )
+        }
 
         override fun findCreatedEvent(
             calendar: Cl1CalendarDescriptor,

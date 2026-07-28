@@ -16,6 +16,7 @@ import org.fossify.clock.cl1.Cl1JdkDomainToAscii
 import org.fossify.clock.cl1.Cl1Limits
 import org.fossify.clock.cl1.Cl1Payload
 import org.fossify.clock.cl1.Cl1Revision
+import org.fossify.clock.cl1.Cl1SourceRecord
 import org.fossify.clock.cl1.Cl1TitleOverride
 import org.fossify.clock.cl1.Cl1Transform
 import org.fossify.clock.cl1.provider.Cl1CalendarAdapter
@@ -102,24 +103,50 @@ internal class Cl1ResolutionEngine(
     }
 
     fun unlink(relation: Cl1RelationSnapshot): Cl1OperationResult {
-        val source = relation.source
+        val sourceRef = relation.source?.ref
             ?: return Cl1OperationResult.Rejected(null, "sourceUnavailable")
-        val mirror = relation.mirror
+        val mirrorRef = relation.mirror?.ref
             ?: return Cl1OperationResult.Rejected(null, "mirrorUnavailable")
-        val payload = relation.mirrorPayload
+        val source = adapter.readEvent(sourceRef)
+            ?: return Cl1OperationResult.Rejected(null, "sourceUnavailable")
+        val mirror = adapter.readEvent(mirrorRef)
+            ?: return Cl1OperationResult.Rejected(null, "mirrorUnavailable")
+        val freshRelation = Cl1Discovery.build(
+            events = listOf(source, mirror),
+            domainToAscii = domainToAscii
+        ).relations.singleOrNull { it.key == relation.key }
+            ?: return Cl1OperationResult.Rejected(null, "relationUnavailable")
+        val payload = freshRelation.mirrorPayload
             ?: return Cl1OperationResult.Rejected(null, "mirrorPayloadUnavailable")
         if (
-            relation.state == Cl1RelationState.RELATION_CONFLICT ||
-            relation.state == Cl1RelationState.RECORD_CORRUPT ||
-            relation.state == Cl1RelationState.INCOMPATIBLE
+            freshRelation.state == Cl1RelationState.RELATION_CONFLICT ||
+            freshRelation.state == Cl1RelationState.RECORD_CORRUPT ||
+            freshRelation.state == Cl1RelationState.INCOMPATIBLE
         ) {
             return Cl1OperationResult.Rejected(null, "relationNotSafeToUnlink")
         }
+        val sourceRecord = freshRelation.sourcePayload
+            ?.records
+            ?.getOrNull(
+                freshRelation.sourceRecordIndex
+                    ?: return Cl1OperationResult.Rejected(
+                        null,
+                        "sourceRecordUnavailable"
+                    )
+            )
+            ?: return Cl1OperationResult.Rejected(null, "sourceRecordUnavailable")
+        if (sourceRecord.slot != freshRelation.key.slot) {
+            return Cl1OperationResult.Rejected(null, "sourceRecordUnavailable")
+        }
         val journal = Cl1UnlinkJournal(
-            slotHex = relation.key.slot.toHex(),
+            slotHex = freshRelation.key.slot.toHex(),
             secretHex = payload.secret.toHex(),
             source = Cl1EventRefDto.from(source.ref),
-            mirror = Cl1EventRefDto.from(mirror.ref)
+            mirror = Cl1EventRefDto.from(mirror.ref),
+            sourceEmailCiphertextHex = sourceRecord.emailCiphertext.toHex(),
+            sourceGcmTagHex = sourceRecord.gcmTag.toHex(),
+            sourceDescription = source.description,
+            mirrorDescription = mirror.description
         )
         val operation = newOperation(
             slotHex = journal.slotHex,
@@ -418,6 +445,22 @@ internal class Cl1ResolutionEngine(
                         return conflict(operation, "sourceRelationConflict")
                     }
                     if (matching == 1) {
+                        val expectedRecord = journal.sourceRecord()
+                        val currentRecord = payload.records.single {
+                            it.slot == slot
+                        }
+                        if (
+                            expectedRecord != null &&
+                            currentRecord != expectedRecord
+                        ) {
+                            return conflict(operation, "sourceRecordChanged")
+                        }
+                        if (
+                            journal.sourceDescription != null &&
+                            source.description != journal.sourceDescription
+                        ) {
+                            return conflict(operation, "sourceBlockChanged")
+                        }
                         val remaining = payload.records.filterNot { it.slot == slot }
                         val description = if (remaining.isEmpty()) {
                             parsed.userDescription
@@ -498,6 +541,12 @@ internal class Cl1ResolutionEngine(
                     ?: return conflict(operation, "mirrorRoleChanged")
                 if (!Cl1Crypto.constantTimeEquals(payload.secret, secret)) {
                     return conflict(operation, "mirrorRelationChanged")
+                }
+                if (
+                    journal.mirrorDescription != null &&
+                    mirror.description != journal.mirrorDescription
+                ) {
+                    return conflict(operation, "mirrorBlockChanged")
                 }
                 operation = checkpoint(
                     operation,
@@ -745,6 +794,13 @@ internal class Cl1ResolutionEngine(
             ).also {
                 require(Cl1Bytes.fromHex(it.slotHex).size == Cl1Limits.SLOT_BYTES)
                 require(Cl1Bytes.fromHex(it.secretHex).size == Cl1Limits.SECRET_BYTES)
+                require(
+                    (it.sourceEmailCiphertextHex == null) ==
+                        (it.sourceGcmTagHex == null)
+                )
+                it.sourceRecord()?.let { record ->
+                    require(record.slot == Cl1Bytes.fromHex(it.slotHex))
+                }
             }
         }
     }
@@ -952,6 +1008,16 @@ internal class Cl1ResolutionEngine(
                 titleOverride = title,
                 startOffsetSeconds = startOffsetSeconds,
                 durationOverride = duration
+            )
+        }
+
+        fun Cl1UnlinkJournal.sourceRecord(): Cl1SourceRecord? {
+            val ciphertext = sourceEmailCiphertextHex ?: return null
+            val tag = sourceGcmTagHex ?: return null
+            return Cl1SourceRecord(
+                slot = Cl1Bytes.fromHex(slotHex),
+                emailCiphertext = Cl1Bytes.fromHex(ciphertext),
+                gcmTag = Cl1Bytes.fromHex(tag)
             )
         }
     }

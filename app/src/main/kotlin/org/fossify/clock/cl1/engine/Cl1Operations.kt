@@ -124,6 +124,10 @@ internal data class Cl1UnlinkJournal(
     val secretHex: String,
     val source: Cl1EventRefDto,
     val mirror: Cl1EventRefDto,
+    val sourceEmailCiphertextHex: String? = null,
+    val sourceGcmTagHex: String? = null,
+    val sourceDescription: String? = null,
+    val mirrorDescription: String? = null,
 )
 
 @Serializable
