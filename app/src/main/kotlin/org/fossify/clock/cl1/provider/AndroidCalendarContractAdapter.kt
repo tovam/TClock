@@ -218,6 +218,62 @@ class AndroidCalendarContractAdapter(
         }
     }
 
+    override fun moveEvent(
+        expected: Cl1EventSnapshot,
+        destination: Cl1CalendarDescriptor,
+        value: Cl1EventWrite,
+    ): Cl1MutationResult {
+        val sourceIneligible = writeIneligibility(
+            expected.calendar,
+            value,
+            creating = false
+        )
+        if (sourceIneligible != null) {
+            return Cl1MutationResult.Ineligible(sourceIneligible)
+        }
+        val destinationIneligible = writeIneligibility(
+            destination,
+            value,
+            creating = true
+        )
+        if (destinationIneligible != null) {
+            return Cl1MutationResult.Ineligible(destinationIneligible)
+        }
+        val values = try {
+            value.toContentValues(destination.ref.calendarId, uid = null)
+        } catch (exception: Cl1CalendarIncompatibleException) {
+            return Cl1MutationResult.Ineligible(exception.field)
+        }
+        val precondition = EventPrecondition.from(expected)
+        return try {
+            when (
+                resolver.update(
+                    CalendarContract.Events.CONTENT_URI,
+                    values,
+                    precondition.selection,
+                    precondition.arguments
+                )
+            ) {
+                1 -> {
+                    val movedRef = Cl1EventRef(
+                        expected.ref.eventId,
+                        destination.ref.calendarId
+                    )
+                    val moved = readEvent(movedRef)
+                        ?: return Cl1MutationResult.Failed("movedEventMissing")
+                    verifyMutation(moved, value)
+                }
+
+                0 -> classifyPreconditionFailure(expected.ref)
+                else -> Cl1MutationResult.Failed("multipleEventsMoved")
+            }
+        } catch (_: SecurityException) {
+            Cl1MutationResult.Ineligible("writePermission")
+        } catch (_: IllegalArgumentException) {
+            Cl1MutationResult.Ineligible("providerMove")
+        }
+    }
+
     private fun resolveCreateFailure(
         calendarId: Long,
         uid: String,

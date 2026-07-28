@@ -196,12 +196,54 @@ class Cl1OperationEngineTest {
         }
     }
 
+    @Test
+    fun `destination change rotates the secret moves the mirror then replaces record`() {
+        val adapter = MemoryCalendarAdapter()
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+        engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF)
+        val before = Cl1Discovery.build(adapter.allEvents()).relations.single()
+
+        val changed = engine.changeDestination(before, NEW_MIRROR_CALENDAR_REF)
+
+        assertTrue(changed is Cl1OperationResult.Completed)
+        val after = Cl1Discovery.build(adapter.allEvents()).relations.single()
+        assertEquals(Cl1RelationState.ACTIVE, after.state)
+        assertTrue(after.key.slot != before.key.slot)
+        assertEquals(NEW_MIRROR_CALENDAR_ID, after.mirror?.ref?.calendarId)
+        assertEquals(OTHER_EMAIL, after.mirror?.calendar?.canonicalAccountEmail)
+        assertTrue(storage.listPendingOperations().isEmpty())
+    }
+
+    @Test
+    fun `source deletion removes every known mirror before deleting the source`() {
+        val adapter = MemoryCalendarAdapter()
+        val storage = MemoryStorage()
+        val engine = Cl1OperationEngine(adapter, storage)
+        engine.createRelation(SOURCE_REF, MIRROR_CALENDAR_REF)
+        val discovery = Cl1Discovery.build(adapter.allEvents())
+
+        val deleted = engine.deleteSource(SOURCE_REF, discovery)
+
+        assertTrue(deleted is Cl1OperationResult.Completed)
+        assertTrue(adapter.allEvents().isEmpty())
+        assertEquals(
+            listOf(MIRROR_CALENDAR_ID, SOURCE_CALENDAR_ID),
+            adapter.deletionOrder.map { it.calendarId }
+        )
+        assertTrue(storage.listPendingOperations().isEmpty())
+    }
+
     private class MemoryCalendarAdapter(
         private var lostFirstCreateResponse: Boolean = false,
         private val sourceTitleAfterCreate: String? = null,
     ) : Cl1CalendarAdapter {
         private val sourceCalendar = calendar(SOURCE_CALENDAR_ID)
         private val mirrorCalendar = calendar(MIRROR_CALENDAR_ID)
+        private val newMirrorCalendar = calendar(
+            NEW_MIRROR_CALENDAR_ID,
+            OTHER_EMAIL
+        )
         private val events = linkedMapOf(
             SOURCE_REF to event(
                 ref = SOURCE_REF,
@@ -212,6 +254,7 @@ class Cl1OperationEngineTest {
         )
         private val createdByToken = HashMap<String, Cl1EventRef>()
         private var nextId = 100L
+        val deletionOrder = ArrayList<Cl1EventRef>()
 
         fun allEvents(): List<Cl1EventSnapshot> = events.values.toList()
 
@@ -244,7 +287,7 @@ class Cl1OperationEngineTest {
         }
 
         override fun listCalendars(): List<Cl1CalendarDescriptor> {
-            return listOf(sourceCalendar, mirrorCalendar)
+            return listOf(sourceCalendar, mirrorCalendar, newMirrorCalendar)
         }
 
         override fun listEvents(
@@ -318,7 +361,35 @@ class Cl1OperationEngineTest {
                 return Cl1MutationResult.PreconditionFailed
             }
             events.remove(expected.ref)
+            deletionOrder.add(expected.ref)
             return Cl1MutationResult.Applied(null)
+        }
+
+        override fun moveEvent(
+            expected: Cl1EventSnapshot,
+            destination: Cl1CalendarDescriptor,
+            value: Cl1EventWrite,
+        ): Cl1MutationResult {
+            val current = events[expected.ref] ?: return Cl1MutationResult.Missing
+            if (current != expected) {
+                return Cl1MutationResult.PreconditionFailed
+            }
+            val movedRef = Cl1EventRef(
+                current.ref.eventId,
+                destination.ref.calendarId
+            )
+            val moved = eventFromWrite(
+                ref = movedRef,
+                calendar = destination,
+                uid = current.uid2445,
+                value = value
+            )
+            events.remove(current.ref)
+            events[movedRef] = moved
+            createdByToken.entries.forEach {
+                if (it.value == current.ref) it.setValue(movedRef)
+            }
+            return Cl1MutationResult.Applied(moved)
         }
 
         private fun eventFromWrite(
@@ -370,18 +441,24 @@ class Cl1OperationEngineTest {
     private companion object {
         const val SOURCE_CALENDAR_ID = 10L
         const val MIRROR_CALENDAR_ID = 20L
+        const val NEW_MIRROR_CALENDAR_ID = 30L
         val SOURCE_REF = Cl1EventRef(1, SOURCE_CALENDAR_ID)
         val MIRROR_CALENDAR_REF = Cl1CalendarRef(MIRROR_CALENDAR_ID)
+        val NEW_MIRROR_CALENDAR_REF = Cl1CalendarRef(NEW_MIRROR_CALENDAR_ID)
         val EMAIL = Cl1CanonicalEmail("me@example.com")
+        val OTHER_EMAIL = Cl1CanonicalEmail("other@example.com")
 
-        fun calendar(id: Long): Cl1CalendarDescriptor {
+        fun calendar(
+            id: Long,
+            email: Cl1CanonicalEmail = EMAIL,
+        ): Cl1CalendarDescriptor {
             return Cl1CalendarDescriptor(
                 ref = Cl1CalendarRef(id),
                 displayName = "Calendar $id",
                 color = null,
-                accountName = EMAIL.value,
+                accountName = email.value,
                 accountType = "test",
-                canonicalAccountEmail = EMAIL,
+                canonicalAccountEmail = email,
                 visible = true,
                 accessLevel = 700,
                 capabilities = Cl1CalendarCapability.entries.toSet()

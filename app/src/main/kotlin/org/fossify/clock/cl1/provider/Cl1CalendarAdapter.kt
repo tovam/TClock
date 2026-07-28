@@ -177,6 +177,12 @@ interface Cl1CalendarAdapter {
         value: Cl1EventWrite,
     ): Cl1MutationResult
 
+    fun moveEvent(
+        expected: Cl1EventSnapshot,
+        destination: Cl1CalendarDescriptor,
+        value: Cl1EventWrite,
+    ): Cl1MutationResult = Cl1MutationResult.Ineligible("move")
+
     fun deleteEvent(expected: Cl1EventSnapshot): Cl1MutationResult
 }
 

@@ -127,6 +127,41 @@ internal data class Cl1UnlinkJournal(
 )
 
 @Serializable
+internal data class Cl1ChangeDestinationJournal(
+    val oldSlotHex: String,
+    val oldSecretHex: String,
+    val newSecretHex: String,
+    val destinationCalendarId: Long,
+    val destinationEmail: String,
+    val source: Cl1EventRefDto,
+    val mirrorEventId: Long,
+    val originalMirrorCalendarId: Long,
+    val titleMode: String,
+    val titleValue: String? = null,
+    val startOffsetSeconds: Long?,
+    val durationMode: String,
+    val durationValue: String? = null,
+) {
+    companion object {
+    }
+}
+
+@Serializable
+internal data class Cl1DeleteMirrorJournal(
+    val slotHex: String,
+    val secretHex: String,
+    val mirror: Cl1EventRefDto,
+    val deleted: Boolean = false,
+)
+
+@Serializable
+internal data class Cl1DeleteSourceJournal(
+    val source: Cl1EventRefDto,
+    val mirrors: List<Cl1DeleteMirrorJournal>,
+    val deletingSlotHex: String? = null,
+)
+
+@Serializable
 internal data class Cl1CanonicalEventDto(
     val title: String,
     val startUnixSeconds: Long,
@@ -174,6 +209,8 @@ internal object Cl1OperationTypes {
     const val APPLY_COPY = "applyCopy"
     const val CONVERT_OVERRIDES = "convertOverrides"
     const val UNLINK = "unlink"
+    const val CHANGE_DESTINATION = "changeDestination"
+    const val DELETE_SOURCE = "deleteSource"
 }
 
 internal object Cl1CreatePhases {
@@ -196,5 +233,8 @@ internal object Cl1ResolutionPhases {
     const val SOURCE_DETACHED = "sourceDetached"
     const val SOURCE_APPLIED = "sourceApplied"
     const val MIRROR_APPLYING = "mirrorApplying"
+    const val MIRROR_UPDATED = "mirrorUpdated"
+    const val COPIES_DELETING = "copiesDeleting"
+    const val SOURCE_DELETING = "sourceDeleting"
     const val CONFLICT = "conflict"
 }

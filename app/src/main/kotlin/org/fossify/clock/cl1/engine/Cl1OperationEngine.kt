@@ -44,6 +44,12 @@ class Cl1OperationEngine(
         domainToAscii = domainToAscii,
         nowMillis = nowMillis
     )
+    private val lifecycle = Cl1LifecycleEngine(
+        adapter = adapter,
+        storage = storage,
+        domainToAscii = domainToAscii,
+        nowMillis = nowMillis
+    )
 
     fun createRelation(
         sourceRef: Cl1EventRef,
@@ -158,6 +164,16 @@ class Cl1OperationEngine(
         relation: Cl1RelationSnapshot,
     ): Cl1OperationResult = resolutions.unlink(relation)
 
+    fun changeDestination(
+        relation: Cl1RelationSnapshot,
+        destinationRef: Cl1CalendarRef,
+    ): Cl1OperationResult = lifecycle.changeDestination(relation, destinationRef)
+
+    fun deleteSource(
+        sourceRef: Cl1EventRef,
+        discovery: Cl1DiscoverySnapshot,
+    ): Cl1OperationResult = lifecycle.deleteSource(sourceRef, discovery)
+
     fun reconcile(discovery: Cl1DiscoverySnapshot): List<Cl1OperationResult> {
         val pendingSlots = storage.listPendingOperations()
             .asSequence()
@@ -186,6 +202,9 @@ class Cl1OperationEngine(
             Cl1OperationTypes.CONVERT_OVERRIDES,
             Cl1OperationTypes.UNLINK,
             -> resolutions.resume(operation)
+            Cl1OperationTypes.CHANGE_DESTINATION,
+            Cl1OperationTypes.DELETE_SOURCE,
+            -> lifecycle.resume(operation)
             else -> Cl1OperationResult.Rejected(
                 operation.operationId,
                 "unknownOperationType"
