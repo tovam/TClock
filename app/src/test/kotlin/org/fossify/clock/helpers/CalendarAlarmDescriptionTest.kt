@@ -1,7 +1,9 @@
 package org.fossify.clock.helpers
 
 import org.fossify.clock.cl1.Cl1Armor
+import org.fossify.clock.cl1.Cl1Bytes
 import org.fossify.clock.cl1.Cl1Payload
+import org.fossify.clock.cl1.Cl1SourceRecord
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -10,7 +12,17 @@ class CalendarAlarmDescriptionTest {
     fun `alarm parser sees only the user description of a valid CL1 block`() {
         val description = Cl1Armor.compose(
             userDescription = "notes\nALARM:-60min\nmore notes",
-            payload = Cl1Payload.Source(emptyList())
+            payload = Cl1Payload.Source(
+                listOf(
+                    Cl1SourceRecord(
+                        slot = Cl1Bytes.fromHex("000102030405060708090a0b"),
+                        emailCiphertext = Cl1Bytes.fromHex("01"),
+                        gcmTag = Cl1Bytes.fromHex(
+                            "000102030405060708090a0b0c0d0e0f"
+                        )
+                    )
+                )
+            )
         )
 
         assertEquals(
