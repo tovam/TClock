@@ -59,21 +59,31 @@ class AlarmActivity : SimpleActivity() {
 
         val id = intent.getIntExtra(ALARM_ID, -1)
         alarm = dbHelper.getAlarmWithId(id)
-        if (alarm == null) {
+        val currentAlarm = alarm
+        if (currentAlarm == null) {
             finish()
             return
         }
 
-        val label = alarm!!.label.ifEmpty {
+        val label = currentAlarm.label.ifEmpty {
             getString(org.fossify.commons.R.string.alarm)
         }
 
         binding.reminderTitle.text = label
-        binding.reminderText.text = getFormattedTime(
+        val formattedTime = getFormattedTime(
             passedSeconds = getPassedSeconds(),
             showSeconds = false,
             makeAmPmSmaller = false
         )
+        val eventTitle = currentAlarm.relativeEventTitle()
+        binding.reminderText.text = if (
+            currentAlarm.calendarAlarmName.isNotBlank() &&
+            eventTitle.isNotBlank()
+        ) {
+            getString(R.string.relative_alarm_ring_context, formattedTime, eventTitle)
+        } else {
+            formattedTime
+        }
 
         setupAlarmButtons()
         EventBus.getDefault().register(this)

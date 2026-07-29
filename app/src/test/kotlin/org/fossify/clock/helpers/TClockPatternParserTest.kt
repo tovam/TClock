@@ -26,6 +26,72 @@ class TClockPatternParserTest {
     }
 
     @Test
+    fun optionalNamesAreParsedUntilTheEndOfTheirLine() {
+        val result = TClockPatternParser.parse(
+            "Train régional\n" +
+                "ALARM:-2h | Préparer le sac et les billets\n" +
+                "ALARM:+3h\t|\tMettre la batterie en charge"
+        )
+
+        assertEquals(
+            listOf(
+                TClockPatternParser.Marker(
+                    offsetMinutes = -120,
+                    name = "Préparer le sac et les billets"
+                ),
+                TClockPatternParser.Marker(
+                    offsetMinutes = 180,
+                    name = "Mettre la batterie en charge"
+                )
+            ),
+            result.markers
+        )
+        assertEquals(setOf(-120, 180), result.offsets)
+    }
+
+    @Test
+    fun legacyMarkersRemainUnnamedAndBlankNamesFallBackToLegacyBehavior() {
+        val result = TClockPatternParser.parse(
+            "ALARM:30min\nALARMS:+1h |   "
+        )
+
+        assertEquals(
+            listOf(
+                TClockPatternParser.Marker(-30, null),
+                TClockPatternParser.Marker(60, null)
+            ),
+            result.markers
+        )
+    }
+
+    @Test
+    fun differentlyNamedMarkersAtTheSameOffsetRemainDistinct() {
+        val result = TClockPatternParser.parse(
+            "ALARM:-2h | Préparer le sac\n" +
+                "ALARM:-2h | Vérifier les billets"
+        )
+
+        assertEquals(2, result.parsedCount)
+        assertEquals(setOf(-120), result.offsets)
+        assertEquals(
+            listOf("Préparer le sac", "Vérifier les billets"),
+            result.markers.map { it.name }
+        )
+    }
+
+    @Test
+    fun namedMarkersCanShareOnePhysicalLine() {
+        val result = TClockPatternParser.parse(
+            "ALARM:-2h | Préparer le sac ALARM:+3h | Mettre en charge"
+        )
+
+        assertEquals(
+            listOf("Préparer le sac", "Mettre en charge"),
+            result.markers.map { it.name }
+        )
+    }
+
+    @Test
     fun singularPluralUnitAliasesAndCaseInsensitivityAreHandled() {
         listOf("m", "min", "mins", "minute", "minutes").forEach { unit ->
             assertEquals(setOf(-2), TClockPatternParser.parseOffsets("alarm:2$unit"))

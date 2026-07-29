@@ -195,6 +195,59 @@ class CalendarDiagnosticsBuilderTest {
     }
 
     @Test
+    fun namedRelativeAlarmsAtTheSameOffsetRemainSeparate() {
+        val record = event(
+            eventId = 45L,
+            beginMillis = now + hours(8),
+            title = "Train régional",
+            description = "ALARM:-2h | Préparer le sac\n" +
+                "ALARM:-2h | Vérifier les billets"
+        )
+
+        val diagnostic = build(records = listOf(record)).events.single()
+
+        assertEquals(2, diagnostic.markers.size)
+        assertEquals(
+            listOf("Préparer le sac", "Vérifier les billets"),
+            diagnostic.markers.mapNotNull { it.alarmName }
+        )
+        assertEquals(2, diagnostic.markers.map { it.key.persistedValue }.distinct().size)
+        assertEquals(2, diagnostic.alarmSummary(now).notCreated)
+    }
+
+    @Test
+    fun unnamedAlarmKeysKeepTheirLegacyValueAndNamedKeysAreStable() {
+        val occurrence = CalendarOccurrenceKey(
+            eventId = 46L,
+            beginMillis = now + hours(3)
+        )
+        val legacy = CalendarAlarmKey(occurrence, -30).persistedValue
+        val named = CalendarAlarmKey(
+            occurrence = occurrence,
+            offsetMinutes = -30,
+            alarmName = "Préparer le sac"
+        ).persistedValue
+
+        assertEquals("46:${occurrence.beginMillis}:-30", legacy)
+        assertTrue(named.startsWith("$legacy:name:"))
+        assertEquals(
+            named,
+            CalendarAlarmKey(
+                occurrence = occurrence,
+                offsetMinutes = -30,
+                alarmName = "Préparer le sac"
+            ).persistedValue
+        )
+        assertFalse(
+            named == CalendarAlarmKey(
+                occurrence = occurrence,
+                offsetMinutes = -30,
+                alarmName = "Vérifier les billets"
+            ).persistedValue
+        )
+    }
+
+    @Test
     fun markerMissingAlarmStaysAttachedToItsOccurrence() {
         val record = event(
             eventId = 50L,
@@ -414,6 +467,8 @@ class CalendarDiagnosticsBuilderTest {
         offsetMinutes: Int,
         triggerAtMillis: Long,
         label: String = "",
+        alarmName: String = "",
+        eventTitle: String = label,
     ): Alarm {
         return Alarm(
             id = id,
@@ -430,7 +485,9 @@ class CalendarDiagnosticsBuilderTest {
             calendarKey = key,
             calendarEventId = eventId,
             calendarEventStartMillis = eventStartMillis,
-            calendarOffsetMinutes = offsetMinutes
+            calendarOffsetMinutes = offsetMinutes,
+            calendarAlarmName = alarmName,
+            calendarEventTitle = eventTitle
         )
     }
 

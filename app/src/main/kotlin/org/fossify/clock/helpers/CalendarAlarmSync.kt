@@ -44,6 +44,8 @@ object CalendarAlarmSync {
         val triggerAtMillis: Long,
         val offsetMinutes: Int,
         val label: String,
+        val alarmName: String,
+        val eventTitle: String,
     )
 
     fun hasCalendarPermission(context: Context): Boolean {
@@ -162,6 +164,8 @@ object CalendarAlarmSync {
                     calendarEventStartMillis = candidate.eventStartMillis
                     calendarOffsetMinutes = candidate.offsetMinutes
                     label = candidate.label
+                    calendarAlarmName = candidate.alarmName
+                    calendarEventTitle = candidate.eventTitle
                 }
                 alarm.id = db.insertAlarm(alarm)
                 if (alarm.id > 0) {
@@ -189,7 +193,9 @@ object CalendarAlarmSync {
                     calendarEventId = candidate.eventId,
                     calendarEventStartMillis = candidate.eventStartMillis,
                     calendarOffsetMinutes = candidate.offsetMinutes,
-                    label = candidate.label
+                    label = candidate.label,
+                    calendarAlarmName = candidate.alarmName,
+                    calendarEventTitle = candidate.eventTitle
                 )
                 if (db.updateAlarm(updatedAlarm)) {
                     context.cancelAlarmClock(existing)
@@ -256,6 +262,8 @@ object CalendarAlarmSync {
             calendarEventStartMillis != candidate.eventStartMillis ||
             calendarOffsetMinutes != candidate.offsetMinutes ||
             label != candidate.label ||
+            calendarAlarmName != candidate.alarmName ||
+            calendarEventTitle != candidate.eventTitle ||
             days != 0 ||
             !oneShot ||
             !isEnabled
@@ -283,14 +291,15 @@ object CalendarAlarmSync {
                 return@recordLoop
             }
 
-            val offsets = TClockPatternParser.parseOffsets(
+            val markers = TClockPatternParser.parse(
                 alarmPatternDescription(record.description)
-            )
+            ).markers
             val title = record.title?.takeIf { it.isNotBlank() }
                 ?: context.getString(R.string.calendar_untitled_event)
-            offsets.forEach offsetLoop@{ offsetMinutes ->
+            markers.forEach markerLoop@{ marker ->
+                val offsetMinutes = marker.offsetMinutes
                 if (!CalendarAlarmWindow.supportsOffset(offsetMinutes)) {
-                    return@offsetLoop
+                    return@markerLoop
                 }
                 val triggerAtMillis =
                     record.beginMillis + TimeUnit.MINUTES.toMillis(offsetMinutes.toLong())
@@ -300,7 +309,8 @@ object CalendarAlarmSync {
                             eventId = record.eventId,
                             beginMillis = record.beginMillis
                         ),
-                        offsetMinutes = offsetMinutes
+                        offsetMinutes = offsetMinutes,
+                        alarmName = marker.name
                     ).persistedValue
                     result[key] = Candidate(
                         key = key,
@@ -308,7 +318,9 @@ object CalendarAlarmSync {
                         eventStartMillis = record.beginMillis,
                         triggerAtMillis = triggerAtMillis,
                         offsetMinutes = offsetMinutes,
-                        label = title
+                        label = marker.name ?: title,
+                        alarmName = marker.name.orEmpty(),
+                        eventTitle = title
                     )
                 }
             }

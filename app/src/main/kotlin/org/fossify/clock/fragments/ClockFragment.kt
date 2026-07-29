@@ -244,12 +244,21 @@ class ClockFragment : Fragment() {
             Date(upcomingAlarm.triggerAtMillis)
         )
         val source = if (alarm.isCalendarAlarm()) {
-            context.getString(
-                R.string.clock_upcoming_calendar_source,
-                alarm.label.ifBlank {
-                    context.getString(R.string.calendar_untitled_event)
-                }
-            )
+            val eventTitle = alarm.relativeEventTitle().ifBlank {
+                context.getString(R.string.calendar_untitled_event)
+            }
+            if (alarm.calendarAlarmName.isBlank()) {
+                context.getString(
+                    R.string.clock_upcoming_calendar_source_without_name,
+                    eventTitle
+                )
+            } else {
+                context.getString(
+                    R.string.clock_upcoming_calendar_source,
+                    alarm.relativeAlarmName(),
+                    eventTitle
+                )
+            }
         } else if (alarm.label.isBlank()) {
             context.getString(R.string.clock_upcoming_manual_source_without_label)
         } else {

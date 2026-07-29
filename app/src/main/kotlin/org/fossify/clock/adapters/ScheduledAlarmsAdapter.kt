@@ -53,13 +53,17 @@ class ScheduledAlarmsAdapter(
                 setTextColor(textColor)
             }
             binding.scheduledAlarmLabel.apply {
-                text = alarm.label.ifBlank { context.getString(R.string.unnamed_alarm) }
+                text = if (alarm.isCalendarAlarm()) {
+                    alarm.relativeAlarmName()
+                } else {
+                    alarm.label
+                }.ifBlank { context.getString(R.string.unnamed_alarm) }
                 setTextColor(textColor)
             }
             binding.scheduledAlarmSource.apply {
                 text = if (alarm.isCalendarAlarm()) {
                     val offset = alarm.calendarOffsetMinutes
-                    when {
+                    val relativePosition = when {
                         offset < 0 -> context.getString(
                             R.string.calendar_alarm_before,
                             -offset
@@ -69,6 +73,16 @@ class ScheduledAlarmsAdapter(
                             offset
                         )
                         else -> context.getString(R.string.calendar_alarm_at_start)
+                    }
+                    val eventTitle = alarm.relativeEventTitle()
+                    if (eventTitle.isBlank()) {
+                        relativePosition
+                    } else {
+                        context.getString(
+                            R.string.relative_alarm_source,
+                            eventTitle,
+                            relativePosition
+                        )
                     }
                 } else {
                     context.getString(R.string.manual_alarm)

@@ -190,9 +190,13 @@ class AlarmsAdapter(
             alarmDays.text = getAlarmSelectedDaysString(alarm)
             alarmDays.setTextColor(textColor)
 
-            alarmLabel.text = alarm.label
+            alarmLabel.text = if (alarm.isCalendarAlarm()) {
+                alarm.relativeAlarmName()
+            } else {
+                alarm.label
+            }
             alarmLabel.setTextColor(textColor)
-            alarmLabel.beVisibleIf(alarm.label.isNotEmpty())
+            alarmLabel.beVisibleIf(alarmLabel.text.isNotEmpty())
 
             alarmSwitch.isChecked = alarm.isEnabled
             alarmSwitch.beVisibleIf(!alarm.isCalendarAlarm())
@@ -262,10 +266,20 @@ class AlarmsAdapter(
             val formattedDate = DateFormat.getDateInstance(DateFormat.MEDIUM).format(
                 Date(alarm.triggerAtMillis)
             )
-            return if (alarm.isExpiredCalendarAlarm()) {
+            val date = if (alarm.isExpiredCalendarAlarm()) {
                 activity.getString(R.string.calendar_alarm_expired_date, formattedDate)
             } else {
                 formattedDate
+            }
+            val eventTitle = alarm.relativeEventTitle()
+            return if (alarm.calendarAlarmName.isNotBlank() && eventTitle.isNotBlank()) {
+                activity.getString(
+                    R.string.relative_alarm_date_and_event,
+                    date,
+                    eventTitle
+                )
+            } else {
+                date
             }
         }
         if (alarm.isRecurring()) {

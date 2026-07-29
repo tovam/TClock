@@ -22,6 +22,8 @@ data class Alarm(
     var calendarEventId: Long = 0L,
     var calendarEventStartMillis: Long = 0L,
     var calendarOffsetMinutes: Int = 0,
+    var calendarAlarmName: String = "",
+    var calendarEventTitle: String = "",
 ) {
     fun isRecurring() = days > 0
 
@@ -33,6 +35,12 @@ data class Alarm(
 
     fun isExpiredCalendarAlarm(nowMillis: Long = System.currentTimeMillis()) =
         isCalendarAlarm() && oneShot && triggerAtMillis > 0L && triggerAtMillis <= nowMillis
+
+    fun relativeAlarmName() = calendarAlarmName.ifBlank { label }
+
+    fun relativeEventTitle() = calendarEventTitle.ifBlank {
+        if (calendarAlarmName.isBlank()) label else ""
+    }
 
     companion object {
         const val SOURCE_MANUAL = "manual"

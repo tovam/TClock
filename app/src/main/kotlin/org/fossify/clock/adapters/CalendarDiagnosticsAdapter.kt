@@ -977,7 +977,13 @@ class CalendarDiagnosticsAdapter(
         }
         bindEventAlarmStatus(
             binding = itemBinding,
-            title = formatOffset(marker.key.offsetMinutes),
+            title = marker.alarmName?.let { alarmName ->
+                context.getString(
+                    R.string.calendar_diagnostics_named_marker,
+                    alarmName,
+                    formatOffset(marker.key.offsetMinutes)
+                )
+            } ?: formatOffset(marker.key.offsetMinutes),
             trigger = context.getString(
                 R.string.calendar_diagnostics_expected_trigger,
                 formatDateTime(marker.triggerAtMillis)
@@ -1005,7 +1011,13 @@ class CalendarDiagnosticsAdapter(
         )
         bindEventAlarmStatus(
             binding = itemBinding,
-            title = formatOffset(alarm.calendarOffsetMinutes),
+            title = alarm.calendarAlarmName.takeIf { it.isNotBlank() }?.let { alarmName ->
+                context.getString(
+                    R.string.calendar_diagnostics_named_marker,
+                    alarmName,
+                    formatOffset(alarm.calendarOffsetMinutes)
+                )
+            } ?: formatOffset(alarm.calendarOffsetMinutes),
             trigger = if (alarm.triggerAtMillis > 0L) {
                 context.getString(
                     R.string.calendar_diagnostics_stored_trigger,
@@ -1121,7 +1133,7 @@ class CalendarDiagnosticsAdapter(
                 strokeColor = textColor
             }
             calendarDiagnosticsAlarmTitle.apply {
-                text = row.event?.title ?: alarm.label.ifBlank {
+                text = alarm.relativeAlarmName().ifBlank {
                     context.getString(R.string.unnamed_alarm)
                 }
                 setTextColor(textColor)
@@ -1134,6 +1146,15 @@ class CalendarDiagnosticsAdapter(
                 text = buildList {
                     add(formatCompactDate(alarm.triggerAtMillis))
                     add(formatOffset(alarm.calendarOffsetMinutes))
+                    val eventTitle = row.event?.title ?: alarm.relativeEventTitle()
+                    if (eventTitle.isNotBlank()) {
+                        add(
+                            context.getString(
+                                R.string.calendar_diagnostics_event_source,
+                                eventTitle
+                            )
+                        )
+                    }
                     row.event?.let { event ->
                         add(
                             context.getString(

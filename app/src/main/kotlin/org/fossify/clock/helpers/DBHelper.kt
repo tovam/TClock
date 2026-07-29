@@ -40,11 +40,13 @@ class DBHelper private constructor(
     private val COL_CALENDAR_EVENT_ID = "calendar_event_id"
     private val COL_CALENDAR_EVENT_START_MILLIS = "calendar_event_start_millis"
     private val COL_CALENDAR_OFFSET_MINUTES = "calendar_offset_minutes"
+    private val COL_CALENDAR_ALARM_NAME = "calendar_alarm_name"
+    private val COL_CALENDAR_EVENT_TITLE = "calendar_event_title"
 
     private val mDb = writableDatabase
 
     companion object {
-        private const val DB_VERSION = 3
+        private const val DB_VERSION = 4
         const val DB_NAME = "alarms.db"
 
         @SuppressLint("StaticFieldLeak")
@@ -65,7 +67,8 @@ class DBHelper private constructor(
                 "$COL_IS_ENABLED INTEGER, $COL_VIBRATE INTEGER, $COL_SOUND_TITLE TEXT, $COL_SOUND_URI TEXT, $COL_LABEL TEXT, $COL_ONE_SHOT INTEGER, " +
                 "$COL_TRIGGER_AT_MILLIS INTEGER NOT NULL DEFAULT 0, $COL_SOURCE TEXT NOT NULL DEFAULT '${Alarm.SOURCE_MANUAL}', " +
                 "$COL_CALENDAR_KEY TEXT NOT NULL DEFAULT '', $COL_CALENDAR_EVENT_ID INTEGER NOT NULL DEFAULT 0, " +
-                "$COL_CALENDAR_EVENT_START_MILLIS INTEGER NOT NULL DEFAULT 0, $COL_CALENDAR_OFFSET_MINUTES INTEGER NOT NULL DEFAULT 0)"
+                "$COL_CALENDAR_EVENT_START_MILLIS INTEGER NOT NULL DEFAULT 0, $COL_CALENDAR_OFFSET_MINUTES INTEGER NOT NULL DEFAULT 0, " +
+                "$COL_CALENDAR_ALARM_NAME TEXT NOT NULL DEFAULT '', $COL_CALENDAR_EVENT_TITLE TEXT NOT NULL DEFAULT '')"
         )
         insertInitialAlarms(db)
     }
@@ -81,6 +84,10 @@ class DBHelper private constructor(
             db.execSQL("ALTER TABLE $ALARMS_TABLE_NAME ADD COLUMN $COL_CALENDAR_EVENT_ID INTEGER NOT NULL DEFAULT 0")
             db.execSQL("ALTER TABLE $ALARMS_TABLE_NAME ADD COLUMN $COL_CALENDAR_EVENT_START_MILLIS INTEGER NOT NULL DEFAULT 0")
             db.execSQL("ALTER TABLE $ALARMS_TABLE_NAME ADD COLUMN $COL_CALENDAR_OFFSET_MINUTES INTEGER NOT NULL DEFAULT 0")
+        }
+        if (oldVersion < 4) {
+            db.execSQL("ALTER TABLE $ALARMS_TABLE_NAME ADD COLUMN $COL_CALENDAR_ALARM_NAME TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE $ALARMS_TABLE_NAME ADD COLUMN $COL_CALENDAR_EVENT_TITLE TEXT NOT NULL DEFAULT ''")
         }
     }
 
@@ -146,6 +153,8 @@ class DBHelper private constructor(
             put(COL_CALENDAR_EVENT_ID, alarm.calendarEventId)
             put(COL_CALENDAR_EVENT_START_MILLIS, alarm.calendarEventStartMillis)
             put(COL_CALENDAR_OFFSET_MINUTES, alarm.calendarOffsetMinutes)
+            put(COL_CALENDAR_ALARM_NAME, alarm.calendarAlarmName)
+            put(COL_CALENDAR_EVENT_TITLE, alarm.calendarEventTitle)
         }
     }
 
@@ -168,7 +177,9 @@ class DBHelper private constructor(
             COL_CALENDAR_KEY,
             COL_CALENDAR_EVENT_ID,
             COL_CALENDAR_EVENT_START_MILLIS,
-            COL_CALENDAR_OFFSET_MINUTES
+            COL_CALENDAR_OFFSET_MINUTES,
+            COL_CALENDAR_ALARM_NAME,
+            COL_CALENDAR_EVENT_TITLE
         )
         var cursor: Cursor? = null
         try {
@@ -192,6 +203,8 @@ class DBHelper private constructor(
                         val calendarEventStartMillis =
                             cursor.getLong(cursor.getColumnIndexOrThrow(COL_CALENDAR_EVENT_START_MILLIS))
                         val calendarOffsetMinutes = cursor.getIntValue(COL_CALENDAR_OFFSET_MINUTES)
+                        val calendarAlarmName = cursor.getStringValue(COL_CALENDAR_ALARM_NAME)
+                        val calendarEventTitle = cursor.getStringValue(COL_CALENDAR_EVENT_TITLE)
 
                         val alarm = Alarm(
                             id = id,
@@ -208,7 +221,9 @@ class DBHelper private constructor(
                             calendarKey = calendarKey,
                             calendarEventId = calendarEventId,
                             calendarEventStartMillis = calendarEventStartMillis,
-                            calendarOffsetMinutes = calendarOffsetMinutes
+                            calendarOffsetMinutes = calendarOffsetMinutes,
+                            calendarAlarmName = calendarAlarmName,
+                            calendarEventTitle = calendarEventTitle
                         )
                         alarms.add(alarm)
                     } catch (e: Exception) {

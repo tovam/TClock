@@ -3,6 +3,7 @@ package org.fossify.clock.helpers
 import org.fossify.clock.cl1.engine.Cl1AppSnapshot
 import org.fossify.clock.cl1.provider.Cl1EventRef
 import org.fossify.clock.models.Alarm
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
 data class CalendarOccurrenceKey(
@@ -13,10 +14,29 @@ data class CalendarOccurrenceKey(
 data class CalendarAlarmKey(
     val occurrence: CalendarOccurrenceKey,
     val offsetMinutes: Int,
+    val alarmName: String? = null,
 ) {
     val persistedValue: String
-        get() = "${occurrence.eventId}:${occurrence.beginMillis}:$offsetMinutes"
+        get() {
+            val base = "${occurrence.eventId}:${occurrence.beginMillis}:$offsetMinutes"
+            val name = alarmName?.takeIf { it.isNotBlank() } ?: return base
+            return "$base:name:${name.calendarAlarmNameFingerprint()}"
+        }
 }
+
+private fun String.calendarAlarmNameFingerprint(): String {
+    val digest = MessageDigest.getInstance("SHA-256").digest(toByteArray(Charsets.UTF_8))
+    val hex = CharArray(NAMED_ALARM_FINGERPRINT_BYTES * 2)
+    repeat(NAMED_ALARM_FINGERPRINT_BYTES) { index ->
+        val value = digest[index].toInt() and 0xFF
+        hex[index * 2] = HEX_DIGITS[value ushr 4]
+        hex[index * 2 + 1] = HEX_DIGITS[value and 0x0F]
+    }
+    return String(hex)
+}
+
+private const val NAMED_ALARM_FINGERPRINT_BYTES = 16
+private val HEX_DIGITS = "0123456789abcdef".toCharArray()
 
 enum class CalendarDiagnosticsProviderState {
     AVAILABLE,
@@ -54,6 +74,8 @@ enum class CalendarAlarmDriftField {
     OFFSET,
     TRIGGER,
     LABEL,
+    ALARM_NAME,
+    EVENT_TITLE,
     DAYS,
     ONE_SHOT,
     ENABLED,
@@ -68,6 +90,7 @@ data class CalendarAlarmDiagnostic(
 
 data class CalendarMarkerDiagnostic(
     val key: CalendarAlarmKey,
+    val alarmName: String?,
     val triggerAtMillis: Long,
     val disposition: CalendarMarkerDisposition,
     val alarms: List<CalendarAlarmDiagnostic>,
@@ -293,12 +316,19 @@ internal object CalendarDiagnosticsBuilder {
         val alarmDescription = alarmPatternDescription(record.description)
         val parseResult = TClockPatternParser.parse(alarmDescription)
         val isSuppressedMirror = record.cl1EventRef in suppressedMirrorEvents
-        val markers = parseResult.offsets
-            .map { offsetMinutes ->
+        val markers = parseResult.markers
+            .distinctBy { marker ->
+                CalendarAlarmKey(
+                    occurrence = occurrenceKey,
+                    offsetMinutes = marker.offsetMinutes,
+                    alarmName = marker.name
+                ).persistedValue
+            }
+            .map { marker ->
                 buildMarkerDiagnostic(
                     record = record,
                     occurrenceKey = occurrenceKey,
-                    offsetMinutes = offsetMinutes,
+                    marker = marker,
                     title = title,
                     window = window,
                     alarmsByKey = alarmsByKey,
@@ -331,7 +361,7 @@ internal object CalendarDiagnosticsBuilder {
     private fun buildMarkerDiagnostic(
         record: CalendarEventRecord,
         occurrenceKey: CalendarOccurrenceKey,
-        offsetMinutes: Int,
+        marker: TClockPatternParser.Marker,
         title: String,
         window: CalendarAlarmWindow.Range,
         alarmsByKey: Map<String, List<Alarm>>,
@@ -339,17 +369,22 @@ internal object CalendarDiagnosticsBuilder {
         matchedAlarmIds: MutableSet<Int>,
         isSuppressedMirror: Boolean,
     ): CalendarMarkerDiagnostic {
-        val markerKey = CalendarAlarmKey(occurrenceKey, offsetMinutes)
+        val markerKey = CalendarAlarmKey(
+            occurrence = occurrenceKey,
+            offsetMinutes = marker.offsetMinutes,
+            alarmName = marker.name
+        )
         val triggerAtMillis = record.beginMillis +
-            TimeUnit.MINUTES.toMillis(offsetMinutes.toLong())
+            TimeUnit.MINUTES.toMillis(marker.offsetMinutes.toLong())
         val linkedAlarms = alarmsByKey[markerKey.persistedValue].orEmpty()
         linkedAlarms.forEach { matchedAlarmIds.add(it.id) }
         return CalendarMarkerDiagnostic(
             key = markerKey,
+            alarmName = marker.name,
             triggerAtMillis = triggerAtMillis,
             disposition = markerDisposition(
                 record = record,
-                offsetMinutes = offsetMinutes,
+                offsetMinutes = marker.offsetMinutes,
                 triggerAtMillis = triggerAtMillis,
                 window = window,
                 isSuppressedMirror = isSuppressedMirror
@@ -360,7 +395,9 @@ internal object CalendarDiagnosticsBuilder {
                         record = record,
                         markerKey = markerKey,
                         triggerAtMillis = triggerAtMillis,
-                        title = title,
+                        expectedLabel = marker.name ?: title,
+                        alarmName = marker.name.orEmpty(),
+                        eventTitle = title,
                         hasDuplicateKey = markerKey.persistedValue in duplicateKeys
                     )
                 }
@@ -443,7 +480,9 @@ internal object CalendarDiagnosticsBuilder {
         record: CalendarEventRecord,
         markerKey: CalendarAlarmKey,
         triggerAtMillis: Long,
-        title: String,
+        expectedLabel: String,
+        alarmName: String,
+        eventTitle: String,
         hasDuplicateKey: Boolean,
     ): CalendarAlarmDiagnostic {
         val driftFields = buildSet {
@@ -459,8 +498,14 @@ internal object CalendarDiagnosticsBuilder {
             if (this@toLinkedDiagnostic.triggerAtMillis != triggerAtMillis) {
                 add(CalendarAlarmDriftField.TRIGGER)
             }
-            if (label != title) {
+            if (label != expectedLabel) {
                 add(CalendarAlarmDriftField.LABEL)
+            }
+            if (calendarAlarmName != alarmName) {
+                add(CalendarAlarmDriftField.ALARM_NAME)
+            }
+            if (calendarEventTitle != eventTitle) {
+                add(CalendarAlarmDriftField.EVENT_TITLE)
             }
             if (days != 0) {
                 add(CalendarAlarmDriftField.DAYS)
@@ -563,6 +608,7 @@ internal object CalendarDiagnosticsBuilder {
     private val markerDiagnosticComparator =
         compareBy<CalendarMarkerDiagnostic> { it.triggerAtMillis }
             .thenBy { it.key.offsetMinutes }
+            .thenBy(String.CASE_INSENSITIVE_ORDER) { it.alarmName.orEmpty() }
 
     private val eventDiagnosticComparator =
         compareBy<CalendarEventDiagnostic> { it.beginMillis }

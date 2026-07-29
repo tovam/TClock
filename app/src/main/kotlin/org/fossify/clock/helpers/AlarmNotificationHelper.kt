@@ -43,11 +43,20 @@ class AlarmNotificationHelper(private val context: Context) {
             context.getString(org.fossify.commons.R.string.alarm)
         }
 
-        val contentText = context.getFormattedTime(
+        val formattedTime = context.getFormattedTime(
             passedSeconds = alarm.timeInMinutes * 60,
             showSeconds = false,
             makeAmPmSmaller = false
         )
+        val eventTitle = alarm.relativeEventTitle()
+        val contentText = if (
+            alarm.calendarAlarmName.isNotBlank() &&
+            eventTitle.isNotBlank()
+        ) {
+            context.getString(R.string.relative_alarm_ring_context, formattedTime, eventTitle)
+        } else {
+            formattedTime
+        }
 
         val reminderIntent = Intent(context, AlarmActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
