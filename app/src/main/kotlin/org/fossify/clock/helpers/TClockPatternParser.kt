@@ -41,8 +41,10 @@ object TClockPatternParser {
      * A declaration is an ALARM: or ALARMS: prefix, even when the delay is malformed.
      * Parsed markers include valid duplicates, while [Result.offsets] is deduplicated.
      *
-     * A marker can optionally be named with a pipe until the end of its physical line:
-     * `ALARM:-2h | Prepare the bag`.
+     * A marker can optionally be named with a second colon until the end of its physical line:
+     * `ALARM:-2h:Prepare the bag`.
+     *
+     * The former `| Name` separator remains accepted for compatibility.
      */
     fun parse(description: String): Result {
         val matches = pattern.findAll(description).toList()
@@ -94,7 +96,10 @@ object TClockPatternParser {
         val lineEnd = minOf(physicalLineEnd, nextMarkerStart ?: description.length)
         val suffix = description.substring(suffixStart, lineEnd)
         val separatorIndex = suffix.indexOfFirst { !it.isHorizontalWhitespace() }
-        if (separatorIndex < 0 || suffix[separatorIndex] != '|') {
+        if (
+            separatorIndex < 0 ||
+            suffix[separatorIndex] != ':' && suffix[separatorIndex] != '|'
+        ) {
             return null
         }
         return suffix

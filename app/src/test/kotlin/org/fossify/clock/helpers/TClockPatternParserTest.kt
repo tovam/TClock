@@ -29,8 +29,8 @@ class TClockPatternParserTest {
     fun optionalNamesAreParsedUntilTheEndOfTheirLine() {
         val result = TClockPatternParser.parse(
             "Train régional\n" +
-                "ALARM:-2h | Préparer le sac et les billets\n" +
-                "ALARM:+3h\t|\tMettre la batterie en charge"
+                "ALARM:-2h:Préparer le sac et les billets\n" +
+                "ALARM:+3h:\tMettre la batterie en charge"
         )
 
         assertEquals(
@@ -52,7 +52,7 @@ class TClockPatternParserTest {
     @Test
     fun legacyMarkersRemainUnnamedAndBlankNamesFallBackToLegacyBehavior() {
         val result = TClockPatternParser.parse(
-            "ALARM:30min\nALARMS:+1h |   "
+            "ALARM:30min\nALARMS:+1h:   "
         )
 
         assertEquals(
@@ -67,8 +67,8 @@ class TClockPatternParserTest {
     @Test
     fun differentlyNamedMarkersAtTheSameOffsetRemainDistinct() {
         val result = TClockPatternParser.parse(
-            "ALARM:-2h | Préparer le sac\n" +
-                "ALARM:-2h | Vérifier les billets"
+            "ALARM:-2h:Préparer le sac\n" +
+                "ALARM:-2h:Vérifier les billets"
         )
 
         assertEquals(2, result.parsedCount)
@@ -82,13 +82,22 @@ class TClockPatternParserTest {
     @Test
     fun namedMarkersCanShareOnePhysicalLine() {
         val result = TClockPatternParser.parse(
-            "ALARM:-2h | Préparer le sac ALARM:+3h | Mettre en charge"
+            "ALARM:-2h:Préparer le sac ALARM:+3h:Mettre en charge"
         )
 
         assertEquals(
             listOf("Préparer le sac", "Mettre en charge"),
             result.markers.map { it.name }
         )
+    }
+
+    @Test
+    fun formerPipeSeparatorRemainsCompatible() {
+        val result = TClockPatternParser.parse(
+            "ALARM:-2h | Préparer le sac"
+        )
+
+        assertEquals("Préparer le sac", result.markers.single().name)
     }
 
     @Test

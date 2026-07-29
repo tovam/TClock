@@ -39,7 +39,7 @@
     <string name="alarm_timed_out">Alarm timed out</string>
     <string name="scheduled_alarms">Scheduled alarms</string>
     <string name="no_scheduled_alarms">No alarm is currently scheduled</string>
-    <string name="calendar_permission_explanation">ClockT needs read-only calendar access to find relative alarms in event descriptions. Example: ALARM:-2h | Prepare the bag (the name after | is optional).</string>
+    <string name="calendar_permission_explanation">ClockT needs read-only calendar access to find relative alarms in event descriptions. Example: ALARM:-2h:Prepare the bag (the final name is optional).</string>
     <string name="allow_calendar_access">Allow calendar access</string>
     <string name="sync_calendar_now">Sync calendar now</string>
     <string name="calendar_sync_failed">Calendar synchronization failed. Existing alarms were kept unchanged.</string>
@@ -112,7 +112,7 @@
     <string name="calendar_diagnostics_description">Full description</string>
     <string name="calendar_diagnostics_markers_and_alarms">Markers and ClockT alarm records</string>
     <string name="calendar_diagnostics_marker_none">No ALARM/ALARMS marker</string>
-    <string name="calendar_diagnostics_marker_invalid">Contains “alarm:” or “alarms:” but no valid marker such as ALARM:-30min | Prepare the bag (the name after | is optional; minutes: m/min/mins/minute(s); hours: h/hr(s)/hour(s)/heure(s); days: d/day(s)/j/jour(s))</string>
+    <string name="calendar_diagnostics_marker_invalid">Contains “alarm:” or “alarms:” but no valid marker such as ALARM:-30min:Prepare the bag (the final name is optional; minutes: m/min/mins/minute(s); hours: h/hr(s)/hour(s)/heure(s); days: d/day(s)/j/jour(s))</string>
     <string name="calendar_diagnostics_marker_valid">%1$d valid ALARM/ALARMS marker(s)</string>
     <string name="calendar_diagnostics_in_window">In the 15-day event window</string>
     <string name="calendar_diagnostics_outside_window">Outside the 15-day event window</string>
@@ -293,7 +293,7 @@
     <string name="calendar_diagnostics_event_missing_alarm_warning">Calendar event not found</string>
     <string name="calendar_diagnostics_expired_alarm_warning">Already triggered · remove it from Alarm to stop any ring or snooze</string>
     <string name="calendar_diagnostics_marker_missing_alarm_warning">ALARM/ALARMS marker removed</string>
-    <string name="calendar_diagnostics_invalid_pattern_short">Invalid format · use ALARM:-60min | Name</string>
+    <string name="calendar_diagnostics_invalid_pattern_short">Invalid format · use ALARM:-60min:Name</string>
     <string name="calendar_diagnostics_alarm_missing_short">Alarm not created yet</string>
     <string name="calendar_diagnostics_marker_removed_short">ALARM/ALARMS marker removed</string>
     <string name="calendar_diagnostics_link_exact">Exact database match</string>

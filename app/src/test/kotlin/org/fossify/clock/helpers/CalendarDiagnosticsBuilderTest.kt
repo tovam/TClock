@@ -200,8 +200,8 @@ class CalendarDiagnosticsBuilderTest {
             eventId = 45L,
             beginMillis = now + hours(8),
             title = "Train régional",
-            description = "ALARM:-2h | Préparer le sac\n" +
-                "ALARM:-2h | Vérifier les billets"
+            description = "ALARM:-2h:Préparer le sac\n" +
+                "ALARM:-2h:Vérifier les billets"
         )
 
         val diagnostic = build(records = listOf(record)).events.single()

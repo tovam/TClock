@@ -11,7 +11,7 @@ class CalendarAlarmDescriptionTest {
     @Test
     fun `alarm parser sees only the user description of a valid CL1 block`() {
         val description = Cl1Armor.compose(
-            userDescription = "notes\nALARM:-60min | Préparer le sac\nmore notes",
+            userDescription = "notes\nALARM:-60min:Préparer le sac\nmore notes",
             payload = Cl1Payload.Source(
                 listOf(
                     Cl1SourceRecord(
@@ -37,7 +37,7 @@ class CalendarAlarmDescriptionTest {
                 .name
         )
         assertEquals(
-            "notes\nALARM:-60min | Préparer le sac\nmore notes",
+            "notes\nALARM:-60min:Préparer le sac\nmore notes",
             alarmPatternDescription(description)
         )
     }
